@@ -178,6 +178,26 @@ export interface ShipmentProjection {
   unknownEventIds: readonly EntityId[]
 }
 
+/** Scoped read model shared by list, detail and scene. No consumer reads the full dataset. */
+export interface ShipmentView {
+  shipment: Shipment
+  projection: ShipmentProjection
+  events: readonly OperatorEvent[]
+  account: Account | undefined
+  origin: LogisticsLocation | undefined
+  destination: LogisticsLocation | undefined
+  operators: readonly Operator[]
+  documents: readonly ShipmentDocument[]
+  locations: readonly LogisticsLocation[]
+}
+
+export interface ShipmentSummary {
+  active: number
+  delivered: number
+  attention: number
+  upcoming: number
+}
+
 export interface RecommendedAction {
   id: EntityId
   shipmentId: EntityId

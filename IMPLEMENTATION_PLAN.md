@@ -303,7 +303,7 @@ La prioridad es demostrar seguimiento multimodal, confianza en la información, 
 - [x] Alcance y stack acordados.
 - [x] Plan guardado en la raíz.
 - [x] Fase 0 completada.
-- [ ] Fase 1 completada.
+- [x] Fase 1 completada.
 - [ ] Fase 2 completada.
 - [ ] Fase 3 completada.
 - [ ] Fase 4 completada.
@@ -366,10 +366,36 @@ Revisada el 31 de octubre de 2026 después de los ajustes de interfaz. La fase 0
 
 El acceso a Vercel sigue pendiente para la publicación de la fase 5. El aviso de tamaño del fragmento 3D y la depreciación de THREE.Clock se mantienen registrados para la fase de rendimiento. Estos pendientes no impiden cerrar la base local.
 
-Los filtros por centro, el histórico, la actualización de estados, las identidades funcionales, los documentos y la IA todavía no están implementados. Permanecen dentro de las fases 1 a 3.
+Al cerrar la fase 0, los filtros por centro, el histórico, la actualización de estados, las identidades funcionales, los documentos y la IA estaban pendientes. La fase 1 incorpora el primer seguimiento y las identidades; el resto permanece en las fases 2 y 3.
+
+### Resultado de la fase 1
+
+Completada el 31 de octubre de 2026 por el agente principal, sin delegación.
+
+- Incorporado el envío nacional `ATL-ES-001`, Madrid → Valencia, con datos sintéticos y reloj inicial fijo.
+- Añadidas dos identidades, operaciones autorizadas y cliente de otra cuenta sin acceso al envío.
+- Implementados estado compartido con Zustand, visibilidad por centro y cuenta, selección validada y limpieza de selección al cambiar de identidad.
+- Listado, detalle, contadores y vehículo 3D consumen las mismas vistas autorizadas y proyecciones. Seleccionar el vehículo o la fila abre el mismo envío. La URL conserva la selección y descarta identificadores ajenos o inexistentes.
+- Añadido un avance reproducible de dos horas que incorpora el evento de entrega una sola vez, y reinicio del escenario. La entrega cambia las superficies conectadas sin modificar la fecha comprometida ni inventar una ETA nueva.
+- El detalle conserva códigos y mensajes originales, fechas del hecho y recepción, normalización y evidencias de ETA y última ubicación confirmada. La posición ilustrativa del vehículo se identifica como tal.
+- Fijados `ShipmentView`, `ShipmentSummary` y los contratos de selección, proyección y escena en `src/domain/contracts.ts` y `src/domain/README.md` para preparar la fase 2.
+
+Verificación de cierre:
+
+| Criterio               | Resultado                                                                                                                                                                             |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Selección sincronizada | Vehículo y listado abren el mismo detalle; selección y URL coherentes                                                                                                                 |
+| Evento compartido      | Entrega actualiza escena, listado, detalle y contadores; repetición idempotente y reinicio reproducible                                                                               |
+| Perímetro              | Cliente ajeno sin envío, detalle, ruta ni contadores asociados; identificador directo rechazado                                                                                       |
+| Reglas                 | Pruebas de cuenta y centro, códigos desconocidos, duplicados, eventos antiguos y futuros, ETA ausente y antigüedad                                                                    |
+| Recorrido automatizado | 12 pruebas correctas en Vitest, incluidas tres de interfaz con jsdom y contrato de escena sustituido                                                                                  |
+| Calidad                | `pnpm check`, `pnpm test` y `pnpm build` correctos                                                                                                                                    |
+| Navegador              | Build de producción revisado en escritorio y móvil de 320 px; WebGL y selección reales, entrega, identidad y reinicio comprobados; sin desbordamiento horizontal en listado y detalle |
+
+No se añaden dependencias. Continúan los avisos conocidos de `THREE.Clock` y tamaño del fragmento 3D, ahora de unos 935 kB sin comprimir y 248 kB comprimido. No se observaron errores de ejecución. El histórico, los escenarios multimodales, la IA, el reloj completo, la persistencia y la publicación mantienen sus fases previstas.
 
 ### Siguiente trabajo
 
-Continuar con la fase 1. Leer primero este plan, `README.md` y los contratos de dominio. Implementar un envío nacional, dos identidades, las reglas de visibilidad y la selección sincronizada entre escena, listado y detalle. Añadir un evento reproducible y las pruebas de esas reglas antes de abrir las tareas paralelas de la fase 2.
+Continuar con la fase 2. Leer primero este plan, `README.md` y `src/domain/README.md`. Antes de delegar, asignar archivos exactos y criterios de aceptación a dominio, escena e interfaz, manteniendo al principal en app, store, componentes compartidos y contratos. Conservar el recorrido de la fase 1 y sus pruebas durante la ampliación del dataset y las vistas.
 
-El documento permite continuar en este chat o abrir uno nuevo sin reconstruir las decisiones de la conversación. Si se cambia de chat, pedir: "Lee IMPLEMENTATION_PLAN.md y README.md. Continúa con la fase 1 y sus verificaciones, manteniendo el alcance acordado".
+El documento permite continuar en este chat o abrir uno nuevo sin reconstruir las decisiones de la conversación. Si se cambia de chat, pedir: "Lee IMPLEMENTATION_PLAN.md, README.md y src/domain/README.md. Continúa con la fase 2 y sus verificaciones, manteniendo el alcance acordado".

@@ -1,8 +1,8 @@
-import { lazy, Suspense, useEffect } from 'react'
+import { lazy, Suspense, useEffect, useMemo } from 'react'
 import {
   ArrowDownToLine,
-  ArrowUpRight,
   ChartNoAxesCombined,
+  ChevronDown,
   LayoutDashboard,
   MapPin,
   Package,
@@ -11,12 +11,19 @@ import {
   ShieldCheck,
   Sparkles,
   Truck,
+  RotateCcw,
+  SkipForward,
+  UserRound,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { SceneBoundary } from '@/scene/SceneBoundary'
 import { useWorkspaceStore, type WorkspaceView } from '@/store/use-workspace-store'
+import { selectVisibleShipments, selectSummary } from '@/domain/selectors'
+import { ShipmentList } from '@/features/shipments/ShipmentTracking'
+import { ShipmentDetail } from '@/features/shipments/ShipmentDetail'
+import { useWorkspaceNavigation } from './use-workspace-navigation'
 
 const NetworkPreview = lazy(() => import('@/scene/NetworkPreview'))
 
@@ -27,16 +34,22 @@ const navigation = [
 ] satisfies { id: WorkspaceView; label: string; icon: typeof Truck }[]
 
 export function App() {
-  const view = useWorkspaceStore((state) => state.view)
-  const setView = useWorkspaceStore((state) => state.setView)
-  const sidebarCollapsed = useWorkspaceStore((state) => state.sidebarCollapsed)
-  const toggleSidebar = useWorkspaceStore((state) => state.toggleSidebar)
+  const state = useWorkspaceStore()
+  const shipments = useMemo(() => selectVisibleShipments(state), [state])
+  const summary = selectSummary(shipments, state.cutoffAt)
+  const selected = shipments.find((item) => item.shipment.id === state.selectedShipmentId)
+  const identity = state.dataset.identities.find((item) => item.id === state.identityId)!
+  const { view, setView, sidebarCollapsed, toggleSidebar } = state
   const sidebarToggleLabel = sidebarCollapsed ? 'Expandir menú lateral' : 'Contraer menú lateral'
-  const pageTitle = navigation.find((item) => item.id === view)?.label ?? 'Vista general'
+  const pageTitle =
+    view === 'shipment-detail'
+      ? 'Detalle del envío'
+      : (navigation.find((item) => item.id === view)?.label ?? 'Vista general')
+  useWorkspaceNavigation()
 
   useEffect(() => {
-    document.title = `${pageTitle} | Atlas`
-  }, [pageTitle])
+    document.title = `${selected?.shipment.reference ?? pageTitle} | Atlas`
+  }, [pageTitle, selected?.shipment.reference])
 
   return (
     <div className="workspace">
@@ -56,8 +69,14 @@ export function App() {
             <Button
               key={id}
               variant="ghost"
-              className={`nav-button ${view === id ? 'nav-button-active' : ''}`}
-              aria-current={view === id ? 'page' : undefined}
+              className={`nav-button ${view === id || (id === 'shipments' && view === 'shipment-detail') ? 'nav-button-active' : ''}`}
+              aria-current={
+                view === id
+                  ? 'page'
+                  : id === 'shipments' && view === 'shipment-detail'
+                    ? 'location'
+                    : undefined
+              }
               aria-label={label}
               title={sidebarCollapsed ? label : undefined}
               onClick={() => setView(id)}
@@ -67,6 +86,33 @@ export function App() {
             </Button>
           ))}
         </nav>
+        {identity.role === 'operations' && shipments.length > 0 && (
+          <fieldset className="sidebar-footer" aria-label="Controles de demo">
+            <Button
+              variant="outline"
+              className="sidebar-demo-button"
+              disabled={summary.delivered === shipments.length}
+              onClick={state.advanceDemo}
+              aria-label="Confirmar entrega · +2 h"
+              title="Confirmar entrega · +2 h"
+            >
+              <SkipForward size={16} aria-hidden="true" />
+              <span className="sidebar-action-label">
+                Confirmar entrega<small>+2 h</small>
+              </span>
+            </Button>
+            <Button
+              variant="ghost"
+              className="sidebar-demo-button"
+              onClick={state.resetDemo}
+              aria-label="Reiniciar"
+              title="Reiniciar"
+            >
+              <RotateCcw size={16} aria-hidden="true" />
+              <span className="sidebar-action-label">Reiniciar</span>
+            </Button>
+          </fieldset>
+        )}
       </aside>
 
       <div className="main-shell">
@@ -89,24 +135,32 @@ export function App() {
                 {pageTitle}
               </h1>
               {view === 'shipments' && (
-                <Badge variant="secondary" className="page-count" aria-label="0 envíos">
-                  0
+                <Badge
+                  variant="secondary"
+                  className="page-count"
+                  aria-label={`${shipments.length} envíos`}
+                >
+                  {shipments.length}
                 </Badge>
               )}
             </div>
           </div>
           <div className="topbar-end">
-            <Badge variant="outline" className="data-badge">
-              <span />
-              Sin datos cargados
-            </Badge>
-            <div className="identity">
-              <span className="identity-avatar">OP</span>
-              <div>
-                <strong>Operaciones</strong>
-                <span>Vista interna</span>
-              </div>
-            </div>
+            <label className="identity-picker">
+              <UserRound size={16} aria-hidden="true" />
+              <select
+                aria-label="Identidad"
+                value={state.identityId}
+                onChange={(event) => state.setIdentity(event.target.value)}
+              >
+                {state.dataset.identities.map((entry) => (
+                  <option key={entry.id} value={entry.id}>
+                    {entry.name}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="identity-chevron" size={14} aria-hidden="true" />
+            </label>
           </div>
         </header>
 
@@ -115,22 +169,34 @@ export function App() {
             <>
               <section className="metric-grid" aria-label="Resumen de la operación">
                 {[
-                  { label: 'Envíos activos', icon: Package, detail: 'En todos tus centros' },
-                  { label: 'Necesitan atención', icon: Route, detail: 'Incidencias por revisar' },
+                  {
+                    label: 'Envíos activos',
+                    icon: Package,
+                    tone: 'blue',
+                    value: summary.active,
+                  },
+                  {
+                    label: 'Necesitan atención',
+                    icon: Route,
+                    tone: 'amber',
+                    value: summary.attention,
+                  },
                   {
                     label: 'Próximas entregas',
                     icon: ArrowDownToLine,
-                    detail: 'Según la información disponible',
+                    tone: 'green',
+                    value: summary.upcoming,
                   },
-                ].map(({ label, icon: Icon, detail }) => (
-                  <Card key={label} className="metric-card">
+                ].map(({ label, icon: Icon, tone, value }) => (
+                  <Card key={label} className="metric-card" data-tone={tone}>
                     <CardContent>
                       <div className="metric-label">
                         <span>{label}</span>
-                        <Icon size={17} />
+                        <Icon size={17} aria-hidden="true" />
                       </div>
-                      <div className="metric-value">0</div>
-                      <p>{detail}</p>
+                      <div className="metric-value" aria-live="polite">
+                        {value}
+                      </div>
                     </CardContent>
                   </Card>
                 ))}
@@ -141,7 +207,11 @@ export function App() {
                   <div className="panel-heading">
                     <div>
                       <h2 id="network-title">Tu red logística</h2>
-                      <p>Orígenes, conexiones y destinos</p>
+                      <p>
+                        {shipments.length
+                          ? 'Selecciona el vehículo para abrir el envío'
+                          : 'No hay rutas visibles para esta identidad'}
+                      </p>
                     </div>
                     <span className="scene-label">
                       <MapPin size={13} />
@@ -150,18 +220,22 @@ export function App() {
                   </div>
                   <figure
                     className="network-scene"
-                    aria-label="Vista 3D inicial de un centro logístico"
+                    aria-label="Red logística de los envíos visibles"
                   >
                     <SceneBoundary>
                       <Suspense fallback={<p className="scene-fallback">Cargando vista de red…</p>}>
-                        <NetworkPreview />
+                        <NetworkPreview
+                          shipments={shipments}
+                          selectedId={state.selectedShipmentId}
+                          onSelect={state.selectShipment}
+                        />
                       </Suspense>
                     </SceneBoundary>
                   </figure>
                   <div className="network-footer">
                     <span className="legend-dot" />
-                    Centro de origen
-                    <span className="network-footer-note">Recorrido esquemático</span>
+                    Ruta por carretera
+                    <span className="network-footer-note">Posición del vehículo ilustrativa</span>
                   </div>
                 </section>
 
@@ -176,34 +250,39 @@ export function App() {
                     <div className="empty-icon">
                       <ShieldCheck size={28} />
                     </div>
-                    <h3>Tu cartera empieza aquí</h3>
-                    <p>Las incidencias aparecerán cuando haya envíos disponibles para revisar.</p>
+                    <h3>
+                      {shipments.length
+                        ? summary.attention
+                          ? 'Información pendiente de revisar'
+                          : 'Sin incidencias pendientes'
+                        : 'Sin envíos asignados'}
+                    </h3>
+                    <p>
+                      {shipments.length
+                        ? `${shipments.length} ${shipments.length === 1 ? 'envío visible' : 'envíos visibles'} en tu cartera. ${summary.delivered} ${summary.delivered === 1 ? 'entregado' : 'entregados'}.`
+                        : 'Esta cuenta no tiene envíos en el conjunto de referencia.'}
+                    </p>
                   </div>
                   <div className="assistant-note">
                     <Sparkles size={18} />
-                    <p>Las recomendaciones incluirán el motivo y los datos que las respaldan.</p>
+                    <p>
+                      El estado y la última ubicación confirmada proceden de los eventos del
+                      operador.
+                    </p>
                   </div>
                 </section>
               </div>
-
-              <section className="shipments-summary" aria-labelledby="shipments-title">
-                <div>
-                  <h2 id="shipments-title">Envíos recientes</h2>
-                  <p>La actividad de tus centros, en un mismo lugar.</p>
-                </div>
-                <Button variant="outline" onClick={() => setView('shipments')}>
-                  Ver envíos
-                  <ArrowUpRight size={15} />
-                </Button>
-              </section>
             </>
           )}
 
           {view === 'shipments' && (
-            <EmptyPage
-              icon={Package}
-              title="No hay envíos"
-              description="Aquí podrás consultar el estado, los hitos y los documentos de tu cartera."
+            <ShipmentList shipments={shipments} onSelect={state.selectShipment} />
+          )}
+          {selected && view === 'shipment-detail' && (
+            <ShipmentDetail
+              key={selected.shipment.id}
+              item={selected}
+              onBack={() => setView('shipments')}
             />
           )}
           {view === 'analytics' && (

@@ -17,4 +17,17 @@
 - `ReportMetric.value` será null cuando no exista muestra suficiente; las esperas abiertas se separan de duraciones completadas.
 - Cada reporte conservará su revisión del dataset y fecha de corte para detectar resultados que necesitan regenerarse.
 
-Las funciones de visibilidad, reducción de eventos, métricas y simulación se implementarán en las siguientes fases. Un cambio en estos contratos requiere coordinar a los consumidores antes de seguir en paralelo.
+## Contratos fijados al cerrar la fase 1
+
+- `DemoDataset` conserva los hechos originales. `referenceTime` es el inicio del reloj; `TrackingState.cutoffAt` es la fecha de corte actual. `revision` aumenta cuando se incorporan eventos nuevos.
+- `canViewShipment` aplica cuenta exacta al cliente y la intersección de centros y cuentas a operaciones. Una identidad desconocida o un perímetro vacío no dan acceso.
+- `selectVisibleShipments` aplica ese perímetro antes de devolver `ShipmentView[]`. Cada vista reúne el envío, su proyección, sus eventos, ubicaciones, operadores y documentos asociados. Listado, detalle y escena reciben estas vistas, sin consultar el dataset completo.
+- `selectSelectedShipment` devuelve `ShipmentView | null` y vuelve a comprobar el perímetro. `selectSummary` deriva activos, entregados, envíos que requieren atención y próximas entregas de las vistas ya autorizadas. Próximas entregas cuenta ETA del operador dentro de las siguientes 24 horas, excluyendo entregados. Atención incluye incidencias, información antigua o ausente y códigos pendientes de clasificar.
+- La escena recibe `shipments`, `selectedId` y `onSelect(id)`. La selección solo contiene el ID del envío. La escena no escribe eventos ni modifica una proyección.
+- `shipmentEvents` filtra envío, tramo y operador. Solo incluye hechos ocurridos y recibidos hasta la fecha de corte. Deduplica por ID, conserva la primera copia y ordena por fecha del hecho, con ID como desempate.
+- `normalizeEvent` devuelve señales conocidas o un código pendiente de clasificación. La fase 1 incorpora el vocabulario de Vía Cargo, `PICKED_UP`, `ON_ROUTE` y `DELIVERED`. Los siguientes adaptadores ampliarán las señales existentes sin modificar eventos originales.
+- `projectShipment` aplica el orden de hitos de cada tramo sin retrocesos. Conserva evidencia y fecha de ETA y ubicación. La fase 1 usa umbrales de 4 horas por carretera y 24 horas por mar para información antigua, excluyendo entregas completadas. La fase 2 ampliará estos umbrales por contexto y completará incidencias y escenarios multimodales.
+- `advanceScenario` incorpora los eventos del escenario hasta su último desplazamiento temporal, sin duplicar IDs que ya existen. La fase 1 expone un único avance de dos horas. Reproducir, pausar y avanzar por pasos corresponden a la fase 3.
+- `setIdentity` valida el ID y limpia selección y vista. `selectShipment` rechaza IDs ajenos o inexistentes y abre la vista `shipment-detail` si el envío está autorizado. `setView` cambia de sección y limpia la selección. `resetDemo` restaura dataset y reloj sin cambiar la identidad, y vuelve al listado si el detalle estaba abierto. No hay persistencia todavía.
+
+Las métricas históricas, las incidencias y el resto de adaptadores se implementarán en las siguientes fases. Un cambio en estos contratos requiere coordinar a los consumidores antes de seguir en paralelo.
