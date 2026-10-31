@@ -1,0 +1,22 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "react", "jsx-a11y"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn"
+  },
+  "rules": {
+    "no-debugger": "error",
+    "react/react-in-jsx-scope": "off"
+  },
+  "ignorePatterns": ["dist/**", "coverage/**", "node_modules/**", ".husky/_/**"],
+  "overrides": [
+    {
+      "files": ["src/scene/**/*.tsx"],
+      "rules": {
+        "react/no-unknown-property": "off",
+        "react/immutability": "off"
+      }
+    }
+  ]
+}

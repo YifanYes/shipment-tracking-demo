@@ -1,0 +1,8 @@
+node_modules/
+dist/
+coverage/
+.vercel/
+.husky/_/
+pnpm-lock.yaml
+playwright-report/
+test-results/
