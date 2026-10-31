@@ -1,13 +1,12 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import {
   ArrowDownToLine,
   ArrowUpRight,
-  Box,
   ChartNoAxesCombined,
-  CircleHelp,
   LayoutDashboard,
   MapPin,
   Package,
+  PanelLeft,
   Route,
   ShieldCheck,
   Sparkles,
@@ -16,7 +15,6 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { Separator } from '@/components/ui/separator'
 import { SceneBoundary } from '@/scene/SceneBoundary'
 import { useWorkspaceStore, type WorkspaceView } from '@/store/use-workspace-store'
 
@@ -25,101 +23,94 @@ const NetworkPreview = lazy(() => import('@/scene/NetworkPreview'))
 const navigation = [
   { id: 'overview', label: 'Vista general', icon: LayoutDashboard },
   { id: 'shipments', label: 'Envíos', icon: Truck },
-  { id: 'analytics', label: 'Análisis IA', icon: ChartNoAxesCombined },
+  { id: 'analytics', label: 'Análisis', icon: ChartNoAxesCombined },
 ] satisfies { id: WorkspaceView; label: string; icon: typeof Truck }[]
-
-const pageCopy = {
-  overview: {
-    title: 'Tu operación, en perspectiva.',
-    description: 'Una visión compartida de cada envío y su recorrido.',
-  },
-  shipments: {
-    title: 'Cada envío, de principio a fin.',
-    description: 'Seguimiento por centro, operador y destino.',
-  },
-  analytics: {
-    title: 'Entiende dónde se detiene tu red.',
-    description: 'Evidencias y propuestas para mejorar la operación.',
-  },
-}
 
 export function App() {
   const view = useWorkspaceStore((state) => state.view)
   const setView = useWorkspaceStore((state) => state.setView)
-  const copy = pageCopy[view]
+  const sidebarCollapsed = useWorkspaceStore((state) => state.sidebarCollapsed)
+  const toggleSidebar = useWorkspaceStore((state) => state.toggleSidebar)
+  const sidebarToggleLabel = sidebarCollapsed ? 'Expandir menú lateral' : 'Contraer menú lateral'
+  const pageTitle = navigation.find((item) => item.id === view)?.label ?? 'Vista general'
+
+  useEffect(() => {
+    document.title = `${pageTitle} | Atlas`
+  }, [pageTitle])
 
   return (
     <div className="workspace">
       <a className="skip-link" href="#main-content">
         Saltar al contenido
       </a>
-      <aside className="sidebar" aria-label="Menú principal">
-        <div className="brand">
-          <span className="brand-icon">
-            <Box size={23} />
-          </span>
-          <span>
-            atlas<span className="brand-dot">.</span>
-          </span>
+      <aside className="sidebar" aria-label="Menú principal" data-collapsed={sidebarCollapsed}>
+        <div className="sidebar-header">
+          <div className="brand">
+            <img className="brand-mark" src="/atlas-mark.svg" alt="" width="36" height="36" />
+            <span className="brand-wordmark">Atlas</span>
+          </div>
         </div>
         <div className="workspace-label">CONTROL LOGÍSTICO</div>
-        <nav className="navigation" aria-label="Navegación">
+        <nav id="workspace-navigation" className="navigation" aria-label="Navegación">
           {navigation.map(({ id, label, icon: Icon }) => (
             <Button
               key={id}
               variant="ghost"
               className={`nav-button ${view === id ? 'nav-button-active' : ''}`}
               aria-current={view === id ? 'page' : undefined}
+              aria-label={label}
+              title={sidebarCollapsed ? label : undefined}
               onClick={() => setView(id)}
             >
               <Icon size={18} />
-              <span>{label}</span>
+              <span className="nav-label">{label}</span>
             </Button>
           ))}
         </nav>
-        <div className="sidebar-note">
-          <ShieldCheck size={18} />
-          <p>
-            Cada dato cuenta.
-            <br />
-            <span>Visibilidad con evidencia.</span>
-          </p>
-        </div>
-        <Separator />
-        <div className="sidebar-footer">
-          <CircleHelp size={16} />
-          <span>Espacio de demostración</span>
-        </div>
       </aside>
 
       <div className="main-shell">
         <header className="topbar">
-          <div className="breadcrumb">
-            Espacio de trabajo <span>/</span>{' '}
-            <strong>{navigation.find((item) => item.id === view)?.label}</strong>
-          </div>
-          <div className="identity">
-            <span className="identity-avatar">OP</span>
-            <div>
-              <strong>Operaciones</strong>
-              <span>Vista interna</span>
+          <div className="topbar-start">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="sidebar-toggle"
+              onClick={toggleSidebar}
+              aria-label={sidebarToggleLabel}
+              title={sidebarToggleLabel}
+              aria-expanded={!sidebarCollapsed}
+              aria-controls="workspace-navigation"
+            >
+              <PanelLeft size={17} />
+            </Button>
+            <div className="page-identity">
+              <h1 id="page-title" className="page-title">
+                {pageTitle}
+              </h1>
+              {view === 'shipments' && (
+                <Badge variant="secondary" className="page-count" aria-label="0 envíos">
+                  0
+                </Badge>
+              )}
             </div>
           </div>
-        </header>
-
-        <main id="main-content" className="main-content" tabIndex={-1}>
-          <div className="page-heading">
-            <div>
-              <p className="eyebrow">RED DE TRANSPORTE</p>
-              <h1>{copy.title}</h1>
-              <p className="page-description">{copy.description}</p>
-            </div>
+          <div className="topbar-end">
             <Badge variant="outline" className="data-badge">
               <span />
               Sin datos cargados
             </Badge>
+            <div className="identity">
+              <span className="identity-avatar">OP</span>
+              <div>
+                <strong>Operaciones</strong>
+                <span>Vista interna</span>
+              </div>
+            </div>
           </div>
+        </header>
 
+        <main id="main-content" className="main-content" aria-labelledby="page-title" tabIndex={-1}>
           {view === 'overview' && (
             <>
               <section className="metric-grid" aria-label="Resumen de la operación">
@@ -211,18 +202,17 @@ export function App() {
           {view === 'shipments' && (
             <EmptyPage
               icon={Package}
-              title="Todavía no hay envíos"
+              title="No hay envíos"
               description="Aquí podrás consultar el estado, los hitos y los documentos de tu cartera."
             />
           )}
           {view === 'analytics' && (
             <EmptyPage
               icon={ChartNoAxesCombined}
-              title="El análisis empieza con tus datos"
-              description="El histórico permitirá identificar esperas, comparar recorridos y proponer mejoras con evidencias."
+              title="No hay histórico de envíos"
+              description="El reporte estará disponible cuando haya envíos históricos para analizar."
             />
           )}
-          <footer className="content-footer">Atlas · Visibilidad de principio a fin</footer>
         </main>
       </div>
     </div>

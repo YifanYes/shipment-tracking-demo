@@ -22,6 +22,8 @@ Referencia visual: [publicación de Dilum Sanjaya](https://x.com/DilumSanjaya/st
 - Estados, ETA y recomendaciones conservarán sus fuentes, fechas y límites. La ausencia de datos se mostrará explícitamente.
 - Interfaz basada en shadcn/ui sobre Base UI y Tailwind, con diseño propio para la escena y los componentes logísticos.
 - La implementación podrá usar subagentes. Se definen responsabilidades y dependencias antes de paralelizar.
+- Las vistas principales tendrán un título compacto en la barra superior, sin encabezados promocionales. Se reservarán los breadcrumbs para páginas con jerarquía real, como el detalle de un envío. Los filtros y acciones se incorporarán junto con sus datos y comportamiento en las fases siguientes.
+- Atlas tendrá un símbolo SVG propio, compartido con el favicon. El control de la sidebar estará en la cabecera del contenido, fuera del panel lateral.
 
 ## Experiencia de producto
 
@@ -346,6 +348,25 @@ Pendientes conocidos:
 - Verificar que el hook acepta el proyecto correcto y rechaza errores de lint y de formato, sin crear commits de prueba.
 
 Estos ajustes están completados. Se han comprobado `pnpm check`, `pnpm build` y la instalación con el lockfile congelado, también sin red. El hook real de Git acepta el proyecto correcto y rechaza tanto un `debugger` como un archivo mal formateado. Los archivos de prueba temporales se han retirado y no se han creado commits.
+
+### Revisión de cierre de la fase 0
+
+Revisada el 31 de octubre de 2026 después de los ajustes de interfaz. La fase 0 está completada conforme a sus condiciones de cierre.
+
+| Criterio                          | Resultado                                                                                                                                                               |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Herramientas y gestor de paquetes | Node.js 26.12.1 y pnpm 12.15.0 comprobados; packageManager fijado y un único lockfile de pnpm                                                                           |
+| Stack y componentes               | Vite, React, TypeScript estricto, Tailwind, shadcn/ui sobre Base UI, Three.js, React Three Fiber, Drei y Zustand configurados                                           |
+| Estructura y contratos            | Contratos de cuentas, identidades, centros, operadores, envíos, tramos, eventos, ETA, documentos, incidencias, acciones y reportes presentes; convenciones documentadas |
+| Comandos y calidad                | pnpm check y pnpm build correctos; Husky activo en core.hooksPath y hook pre-commit con lint y formato                                                                  |
+| Configuración de pruebas          | Vitest carga su configuración mediante pnpm exec vitest list --passWithNoTests; todavía no hay pruebas de negocio, que comienzan en la fase 1                           |
+| Interfaz mínima                   | Tres vistas navegables, título h1 único de 18 px, título de pestaña por sección, sidebar colapsable con control exterior y logotipo y favicon compartidos               |
+| Inspección en navegador           | Build de producción revisado en escritorio y móvil de 320 px; escena 3D renderizada, navegación y colapsado comprobados, sin desbordamiento horizontal                  |
+| Despliegue preparado              | vercel.json define instalación con lockfile congelado, build y recarga de rutas; no hay CLI, sesión local ni proyecto de Vercel enlazado                                |
+
+El acceso a Vercel sigue pendiente para la publicación de la fase 5. El aviso de tamaño del fragmento 3D y la depreciación de THREE.Clock se mantienen registrados para la fase de rendimiento. Estos pendientes no impiden cerrar la base local.
+
+Los filtros por centro, el histórico, la actualización de estados, las identidades funcionales, los documentos y la IA todavía no están implementados. Permanecen dentro de las fases 1 a 3.
 
 ### Siguiente trabajo
 

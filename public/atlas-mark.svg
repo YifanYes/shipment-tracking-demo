@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48" fill="none">
+  <title>Atlas</title>
+  <rect width="48" height="48" rx="13" fill="#3159DC" />
+  <path
+    d="M12 35 22.2 13.7a2 2 0 0 1 3.6 0L36 35"
+    stroke="#fff"
+    stroke-width="5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <path d="M16 28.5h15.5" stroke="#fff" stroke-width="4" stroke-linecap="round" />
+  <circle cx="31.5" cy="28.5" r="3.8" fill="#A8E4D5" stroke="#3159DC" stroke-width="2" />
+</svg>

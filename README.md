@@ -6,7 +6,9 @@ El alcance completo y el reparto del trabajo están en [IMPLEMENTATION_PLAN.md](
 
 ## Estado actual
 
-Fase 0 completada. Están preparados el stack, la estructura inicial, los contratos de dominio, los componentes compartidos y una primera interfaz responsive con escena 3D. Las pestañas de envíos y análisis muestran estados vacíos.
+Fase 0 completada y revisada. Están preparados el stack, la estructura inicial, los contratos de dominio, los componentes compartidos y una primera interfaz responsive con escena 3D. Las pestañas de envíos y análisis muestran estados vacíos.
+
+Las vistas tienen un título compacto en la barra superior. La sidebar se puede colapsar desde un control exterior y el logotipo SVG de Atlas se utiliza también como favicon. Los breadcrumbs se incorporarán en páginas con jerarquía, como el detalle de un envío.
 
 Los datos sintéticos, los permisos, el seguimiento de envíos, las incidencias y los reportes se incorporarán en las fases siguientes. La escena actual establece la base visual y no representa envíos confirmados.
 
@@ -87,8 +89,13 @@ No se ha encontrado una sesión local de Vercel ni un proyecto enlazado durante 
 - Navegación entre vista general, envíos y análisis comprobada sobre el build.
 - Escena 3D renderizada en escritorio y móvil.
 - Vista móvil de 390 píxeles de ancho sin desbordamiento horizontal.
+- Cabeceras compactas revisadas también a 320 píxeles, con un único h1 por vista y título de pestaña según la sección.
+- Colapsado de la sidebar comprobado en escritorio y móvil; control accesible desde la cabecera del contenido.
+- Configuración de Vitest cargada con `pnpm exec vitest list --passWithNoTests`. Este chequeo confirma la configuración y no sustituye las futuras pruebas de negocio.
 - Cero vulnerabilidades en la revisión de dependencias realizada durante la fase 0.
 - Consola sin errores de ejecución. Three.js emite un aviso de depreciación de `Clock`, utilizado por React Three Fiber.
 - El build informa de un fragmento 3D de unos 925 kB sin comprimir y 245 kB comprimido. La escena ya se carga de forma diferida; se revisará el tamaño durante la fase de rendimiento.
 
 Los escenarios de negocio, la alternativa sin WebGL y la publicación todavía requieren sus comprobaciones de las fases posteriores.
+
+La revisión de los criterios de cierre está documentada en `IMPLEMENTATION_PLAN.md`. El siguiente trabajo es el primer recorrido completo de la fase 1.
