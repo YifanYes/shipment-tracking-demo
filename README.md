@@ -101,7 +101,7 @@ Para incorporar un componente adicional con la misma versión de la herramienta:
 pnpm dlx shadcn@4.23.0 add dialog
 ```
 
-La configuración está en `components.json`. Los estilos específicos de producto deben mantener la coherencia entre paneles y escena.
+La configuración está en `components.json`. Los estilos específicos de producto deben mantener la coherencia entre paneles y mapa.
 
 ## Vercel
 
@@ -129,6 +129,12 @@ No se ha encontrado una sesión local de Vercel ni un proyecto enlazado durante 
 - Build de producción inspeccionado en navegador, con selección desde el vehículo y el listado, entrega sincronizada, cambio de identidad y reinicio.
 - Listado y detalle revisados a 320 píxeles; ancho del documento igual al viewport, sin desbordamiento horizontal.
 - Sin errores de ejecución observados. Continúa el aviso de depreciación de `THREE.Clock` de la base y el aviso de tamaño del fragmento 3D, ahora de unos 935 kB sin comprimir y 248 kB comprimido.
+
+Revisión del 2 de noviembre de 2026, con el mapa de MapLibre y la estructura actual:
+
+- `pnpm check`, `pnpm test` (22 pruebas en 6 archivos) y `pnpm build` correctos.
+- Build de producción revisado en escritorio y a 390 píxeles: selección desde el marcador real y desde el listado, entrega sincronizada, cambio de identidad, enlace directo ajeno rechazado y reinicio. Sin desbordamiento horizontal ni errores de consola.
+- Los avisos de Three.js ya no aplican. El build avisa del tamaño del fragmento diferido de MapLibre, de unos 1,08 MB sin comprimir.
 
 Los escenarios multimodales, la alternativa sin WebGL y la publicación todavía requieren sus comprobaciones de las fases posteriores.
 

@@ -141,7 +141,7 @@ Se distinguirán hitos completados y esperas abiertas para evitar comparar durac
 | ------------------ | ---------------------------------------------------------- |
 | Aplicación         | React, TypeScript estricto y Vite                          |
 | Gestor de paquetes | pnpm, con versión fijada en package.json y pnpm-lock.yaml  |
-| Escena             | Three.js, React Three Fiber y Drei                         |
+| Mapa               | MapLibre GL JS, teselas de OpenStreetMap y fondo local     |
 | Componentes        | shadcn/ui sobre Base UI                                    |
 | Estilos            | Tailwind CSS y variables de diseño compartidas             |
 | Estado             | Zustand                                                    |
@@ -213,12 +213,12 @@ Cierre: seleccionar en escena o listado abre el mismo envío; el evento actualiz
 
 El principal y tres subagentes trabajarán simultáneamente como máximo.
 
-| Responsable           | Archivos y trabajo                                      | Entrega y verificación                                                                                                             |
-| --------------------- | ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| Subagente de dominio  | data/, simulation/ y módulos de dominio asignados       | Dataset activo e histórico, eventos heterogéneos, normalización, escenarios y métricas; pruebas de reglas y resultados esperados   |
-| Subagente de escena   | scene/                                                  | Centros, puertos, carretera, mar, vehículos, rutas, cámara y selección; escena inspeccionable con entradas del contrato compartido |
-| Subagente de interfaz | Componentes de features/ asignados                      | Vistas de operaciones y cliente, detalle, documentos y estructura del reporte; estados de carga, vacío y error coherentes          |
-| Agente principal      | app/, store/, components/ui/, contratos y configuración | Integración continua, permisos, componentes compartidos, dependencias y resolución de incompatibilidades                           |
+| Responsable           | Archivos y trabajo                                | Entrega y verificación                                                                                                                  |
+| --------------------- | ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Subagente de dominio  | data/, simulation/ y módulos de dominio asignados | Dataset activo e histórico, eventos heterogéneos, normalización, escenarios y métricas; pruebas de reglas y resultados esperados        |
+| Subagente de mapa     | features/overview/                                | Centros, puertos, rutas por carretera y mar, marcadores, encuadre y selección; mapa inspeccionable con entradas del contrato compartido |
+| Subagente de interfaz | Componentes de features/ asignados                | Vistas de operaciones y cliente, detalle, documentos y estructura del reporte; estados de carga, vacío y error coherentes               |
+| Agente principal      | app/, store/, shared/, contratos y configuración  | Integración continua, permisos, componentes compartidos, dependencias y resolución de incompatibilidades                                |
 
 Cada tarea tendrá una lista exacta de archivos, entradas, salidas y criterios de aceptación. Nadie modificará contratos o dependencias compartidas sin coordinarlo con el principal. Los cambios de contrato se propagarán antes de continuar con tareas dependientes.
 
@@ -413,3 +413,17 @@ El 31 de octubre de 2026 el usuario aprobó sustituir la escena 3D de la vista g
 ## Reorganización de la estructura
 
 El 2 de noviembre de 2026 se reorganizó el código sin cambiar el comportamiento. Las pruebas pasan a `tests/`; los archivos usan kebab-case; cada funcionalidad expone un `index.ts`; `domain/tracking.ts` se divide en `visibility.ts`, `events.ts` y `projection.ts`; las reglas de atención pasan a `domain/attention.ts` y la geometría del mapa a `features/overview/lib/map-data.ts`; el formato compartido pasa a `shared/lib/format.ts`; los estilos se reparten entre `styles/globals.css`, `app/layout/layout.css` y el CSS de cada funcionalidad. Se retiran las dependencias de Three.js. Al asignar archivos en la fase 2 se deben usar estas rutas.
+
+## Revisión de las fases 0 y 1 tras el mapa y la reorganización
+
+Revisada el 2 de noviembre de 2026. Las fases 0 y 1 siguen completadas con el mapa de MapLibre y la nueva estructura. Donde los criterios de cierre mencionan la escena o el vehículo, se aplican al mapa y su marcador.
+
+| Criterio               | Resultado                                                                                                                                               |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Calidad                | `pnpm check`, `pnpm test` (22 pruebas en 6 archivos) y `pnpm build` correctos                                                                           |
+| Selección sincronizada | El marcador real del mapa y la fila del listado abren el mismo detalle `/shipments/shipment-es-001`                                                     |
+| Evento compartido      | Confirmar la entrega actualiza detalle (3 eventos, Entregado), listado, contadores y mapa; el botón queda desactivado y Reiniciar restaura el escenario |
+| Perímetro              | El cliente de otra cuenta no ve el envío en mapa, listado ni contadores; el enlace directo al detalle se redirige al listado vacío                      |
+| Navegador              | Build de producción revisado en escritorio (1280 × 800) y móvil (390 × 844): sin desbordamiento horizontal, sin errores de consola, teselas cargadas    |
+
+Pendientes que no bloquean estas fases: el aviso de tamaño del fragmento de MapLibre (unos 1,08 MB sin comprimir), el uso de las teselas públicas de OpenStreetMap antes de publicar y la comprobación completa sin WebGL en la fase 4.
