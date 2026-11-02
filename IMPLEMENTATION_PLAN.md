@@ -399,3 +399,7 @@ No se añaden dependencias. Continúan los avisos conocidos de `THREE.Clock` y t
 Continuar con la fase 2. Leer primero este plan, `README.md` y `src/domain/README.md`. Antes de delegar, asignar archivos exactos y criterios de aceptación a dominio, escena e interfaz, manteniendo al principal en app, store, componentes compartidos y contratos. Conservar el recorrido de la fase 1 y sus pruebas durante la ampliación del dataset y las vistas.
 
 El documento permite continuar en este chat o abrir uno nuevo sin reconstruir las decisiones de la conversación. Si se cambia de chat, pedir: "Lee IMPLEMENTATION_PLAN.md, README.md y src/domain/README.md. Continúa con la fase 2 y sus verificaciones, manteniendo el alcance acordado".
+
+## Cambio de la vista general: mapa operativo
+
+El 31 de octubre de 2026 el usuario aprobó sustituir la escena 3D de la vista general por un mapa 2D de España con MapLibre. Esta decisión sustituye las referencias anteriores a la escena isométrica para esa vista. Se conserva el perímetro de identidad, el escenario nacional y la navegación al detalle. El mapa representa la última ubicación confirmada, agrupa marcadores y permite seleccionar un recorrido previsto. No implica incorporar seguimiento GPS real ni completar los escenarios de fases posteriores. README.md describe las fuentes de cartografía y las limitaciones del recorrido.

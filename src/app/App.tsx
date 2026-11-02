@@ -1,15 +1,12 @@
-import { lazy, Suspense, useEffect, useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import {
   ArrowDownToLine,
   ChartNoAxesCombined,
   ChevronDown,
   LayoutDashboard,
-  MapPin,
   Package,
   PanelLeft,
   Route,
-  ShieldCheck,
-  Sparkles,
   Truck,
   RotateCcw,
   SkipForward,
@@ -18,14 +15,13 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { SceneBoundary } from '@/scene/SceneBoundary'
 import { useWorkspaceStore, type WorkspaceView } from '@/store/use-workspace-store'
 import { selectVisibleShipments, selectSummary } from '@/domain/selectors'
 import { ShipmentList } from '@/features/shipments/ShipmentTracking'
 import { ShipmentDetail } from '@/features/shipments/ShipmentDetail'
+import { ShipmentOverview } from '@/features/overview/ShipmentOverview'
+import { arrivalsToday } from '@/domain/map'
 import { useWorkspaceNavigation } from './use-workspace-navigation'
-
-const NetworkPreview = lazy(() => import('@/scene/NetworkPreview'))
 
 const navigation = [
   { id: 'overview', label: 'Vista general', icon: LayoutDashboard },
@@ -182,10 +178,10 @@ export function App() {
                     value: summary.attention,
                   },
                   {
-                    label: 'Próximas entregas',
+                    label: 'Llegadas previstas hoy',
                     icon: ArrowDownToLine,
                     tone: 'green',
-                    value: summary.upcoming,
+                    value: arrivalsToday(shipments, state.cutoffAt),
                   },
                 ].map(({ label, icon: Icon, tone, value }) => (
                   <Card key={label} className="metric-card" data-tone={tone}>
@@ -202,76 +198,12 @@ export function App() {
                 ))}
               </section>
 
-              <div className="overview-grid">
-                <section className="network-panel" aria-labelledby="network-title">
-                  <div className="panel-heading">
-                    <div>
-                      <h2 id="network-title">Tu red logística</h2>
-                      <p>
-                        {shipments.length
-                          ? 'Selecciona el vehículo para abrir el envío'
-                          : 'No hay rutas visibles para esta identidad'}
-                      </p>
-                    </div>
-                    <span className="scene-label">
-                      <MapPin size={13} />
-                      Vista isométrica
-                    </span>
-                  </div>
-                  <figure
-                    className="network-scene"
-                    aria-label="Red logística de los envíos visibles"
-                  >
-                    <SceneBoundary>
-                      <Suspense fallback={<p className="scene-fallback">Cargando vista de red…</p>}>
-                        <NetworkPreview
-                          shipments={shipments}
-                          selectedId={state.selectedShipmentId}
-                          onSelect={state.selectShipment}
-                        />
-                      </Suspense>
-                    </SceneBoundary>
-                  </figure>
-                  <div className="network-footer">
-                    <span className="legend-dot" />
-                    Ruta por carretera
-                    <span className="network-footer-note">Posición del vehículo ilustrativa</span>
-                  </div>
-                </section>
-
-                <section className="attention-panel" aria-labelledby="attention-title">
-                  <div className="panel-heading">
-                    <div>
-                      <h2 id="attention-title">Necesita tu atención</h2>
-                      <p>Lo que conviene revisar primero</p>
-                    </div>
-                  </div>
-                  <div className="empty-attention">
-                    <div className="empty-icon">
-                      <ShieldCheck size={28} />
-                    </div>
-                    <h3>
-                      {shipments.length
-                        ? summary.attention
-                          ? 'Información pendiente de revisar'
-                          : 'Sin incidencias pendientes'
-                        : 'Sin envíos asignados'}
-                    </h3>
-                    <p>
-                      {shipments.length
-                        ? `${shipments.length} ${shipments.length === 1 ? 'envío visible' : 'envíos visibles'} en tu cartera. ${summary.delivered} ${summary.delivered === 1 ? 'entregado' : 'entregados'}.`
-                        : 'Esta cuenta no tiene envíos en el conjunto de referencia.'}
-                    </p>
-                  </div>
-                  <div className="assistant-note">
-                    <Sparkles size={18} />
-                    <p>
-                      El estado y la última ubicación confirmada proceden de los eventos del
-                      operador.
-                    </p>
-                  </div>
-                </section>
-              </div>
+              <ShipmentOverview
+                key={state.identityId}
+                shipments={shipments}
+                cutoffAt={state.cutoffAt}
+                onOpenShipment={state.selectShipment}
+              />
             </>
           )}
 

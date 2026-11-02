@@ -73,7 +73,7 @@ describe('hechos y proyección compartida', () => {
       lifecycle: 'active',
       currentStage: 'in_transit',
       freshness: 'current',
-      lastConfirmedLocation: { locationId: 'site-madrid', evidence: { id: transit.id } },
+      lastConfirmedLocation: { locationId: 'waypoint-a3-perales', evidence: { id: transit.id } },
     })
     expect(result.eta).toEqual({
       kind: 'operator',

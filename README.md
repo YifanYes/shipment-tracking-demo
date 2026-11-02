@@ -1,28 +1,28 @@
 # Atlas · Seguimiento de envíos y análisis logístico
 
-Atlas reúne el seguimiento de envíos por carretera y mar en una red logística 3D. Permite a operaciones gestionar incidencias y detectar cuellos de botella, mientras cada cliente consulta el estado, la llegada prevista y los documentos de sus envíos.
+Atlas reúne el seguimiento de envíos por carretera y mar en un mapa operativo. Permite a operaciones gestionar incidencias y detectar cuellos de botella, mientras cada cliente consulta el estado, la llegada prevista y los documentos de sus envíos.
 
 El alcance completo y el reparto del trabajo están en [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md).
 
 ## Estado actual
 
-Fases 0 y 1 completadas. El primer recorrido incluye un envío nacional Madrid → Valencia, un selector de dos identidades, listado y detalle conectados con el vehículo de la escena 3D, y un evento reproducible de entrega.
+Fases 0 y 1 completadas. El primer recorrido incluye un envío nacional Madrid → Valencia, un selector de dos identidades, listado y detalle conectados con el mapa de ubicaciones confirmadas, y un evento reproducible de entrega.
 
 Las vistas tienen un título compacto en la barra superior. La sidebar se puede colapsar desde un control exterior y el logotipo SVG de Atlas se utiliza también como favicon. Los breadcrumbs se incorporarán en páginas con jerarquía, como el detalle de un envío.
 
-La identidad de operaciones puede consultar el envío. El cliente de otra cuenta ve su cartera vacía. El mismo selector de visibilidad limita detalle, escena y contadores, también al abrir un identificador por URL. El histórico, las incidencias, los documentos y los reportes se incorporarán en las fases siguientes.
+La identidad de operaciones puede consultar el envío. El cliente de otra cuenta ve su cartera vacía. El mismo selector de visibilidad limita detalle, mapa y contadores, también al abrir un identificador por URL. El histórico, las incidencias, los documentos y los reportes se incorporarán en las fases siguientes.
 
 ## Recorrido de la fase 1
 
 1. Entrar como `Operaciones Madrid`. El reloj empieza el 31 de octubre de 2026 a las 11:00 en Madrid.
-2. Seleccionar el vehículo `ATL-ES-001` o el envío del listado. Ambos abren su página de detalle, con tarjetas de seguimiento, recorrido y una timeline vertical de eventos del operador. `Volver a envíos` regresa al listado.
-3. Pulsar `Confirmar entrega · +2 h`. El reloj avanza a las 13:00 y recibe el evento `DELIVERED`. Cambian a la vez el vehículo, el detalle, el listado y los contadores.
-4. Cambiar a `Cliente · Levante Retail`. Desaparecen la selección y el envío ajeno, incluidos ruta y contadores. Volver a operaciones permite consultar la entrega.
+2. Seleccionar el marcador `ATL-ES-001` o su fila bajo el mapa y pulsar `Abrir detalle`, o abrir el envío desde el listado. Se abre su página de detalle, con tarjetas de seguimiento, recorrido y una timeline vertical de eventos del operador. `Volver a envíos` regresa al listado.
+3. Pulsar `Confirmar entrega · +2 h`. El reloj avanza a las 13:00 y recibe el evento `DELIVERED`. Cambian a la vez el mapa, el detalle, el listado y los contadores. El envío sale del mapa de envíos en curso y sigue disponible en el listado y el detalle.
+4. Cambiar a `Cliente · Levante Retail`. Desaparecen la selección y el envío ajeno, incluidos ruta y contadores. Volver a operaciones permite consultar la entrega desde el listado.
 5. Pulsar `Reiniciar` para restaurar los datos y el reloj iniciales.
 
 El estado vive en memoria. Recargar restaura el escenario y la identidad iniciales; la persistencia versionada corresponde a la fase 3. El listado tiene la ruta `/shipments` y el detalle `/shipments/shipment-es-001`. Se puede recargar un enlace directo y navegar con Atrás y Adelante. Los enlaces anteriores con `?shipment=shipment-es-001` redirigen a la nueva ruta. Los identificadores no autorizados se descartan con la identidad activa, también desde el historial.
 
-La posición del camión es ilustrativa. La última ubicación confirmada solo cambia con un evento del operador y aparece por separado en el detalle, con fuente y fecha. La fecha comprometida y la ETA también se muestran por separado. Las horas de la interfaz usan `Europe/Madrid`.
+El mapa muestra la última ubicación confirmada por un evento del operador, sin interpolar una posición del vehículo. ATL-ES-001 empieza en la A-3, a la altura de Perales de Tajuña, con una posición sintética incluida en su evento `ON_ROUTE`. Mapa, lista y detalle consumen esa misma ubicación y conservan su fuente y fecha. Las coordenadas del escenario son referencias de la demo, no un seguimiento GPS real. La fecha comprometida y la ETA también se muestran por separado. Las horas de la interfaz usan `Europe/Madrid`.
 
 ## Desarrollo
 
@@ -44,11 +44,11 @@ pnpm build
 pnpm preview
 ```
 
-Vitest tiene 13 pruebas de dominio y recorrido de interfaz. Comprueban perímetro, selección, códigos desconocidos, orden y duplicados, fecha de corte, antigüedad de información, ETA, entrega y reinicio. Las pruebas de interfaz usan jsdom y sustituyen WebGL por el contrato de entradas y selección de la escena. El renderizado y la selección del vehículo real se han comprobado además en navegador.
+Vitest comprueba las reglas de dominio y los recorridos de interfaz. Comprueban perímetro, selección, códigos desconocidos, orden y duplicados, fecha de corte, antigüedad de información, ETA, entrega y reinicio. Las pruebas de interfaz usan jsdom y sustituyen el renderizador WebGL por el contrato de entradas y selección del mapa. El renderizado y la selección del vehículo real se han comprobado además en navegador.
 
 ## Lint, formato y commits
 
-Oxlint comprueba TypeScript, React y accesibilidad JSX. Los errores y avisos bloquean el chequeo. La configuración usa la transformación JSX automática de React y permite las propiedades y los objetos mutables propios de Three.js únicamente en la escena 3D.
+Oxlint comprueba TypeScript, React y accesibilidad JSX. Los errores y avisos bloquean el chequeo. La configuración usa la transformación JSX automática de React.
 
 Prettier aplica un formato común al código, estilos, configuración y documentación, con dos espacios, comillas simples en JavaScript y TypeScript y sin punto y coma.
 
@@ -73,7 +73,7 @@ El hook `pre-commit` ejecuta `pnpm lint` y `pnpm format:check` sobre el proyecto
 | src/data/               | Dataset sintético y escenario nacional reproducible  |
 | src/simulation/         | Avance del escenario e incorporación de eventos      |
 | src/features/shipments/ | Listado, detalle y presentación del seguimiento      |
-| src/scene/              | Modelos, cámara y contención de errores de WebGL     |
+| src/features/overview/  | Mapa operativo, selección y panel de atención        |
 | src/store/              | Dataset, reloj, identidad y selección con Zustand    |
 | src/styles/             | Tokens, estilos globales y utilidades de componentes |
 
@@ -123,3 +123,15 @@ No se ha encontrado una sesión local de Vercel ni un proyecto enlazado durante 
 Los escenarios multimodales, la alternativa sin WebGL y la publicación todavía requieren sus comprobaciones de las fases posteriores.
 
 La revisión de los criterios de cierre está documentada en `IMPLEMENTATION_PLAN.md`. El siguiente trabajo es la fase 2, con los contratos y límites de archivos acordados antes de delegar.
+
+## Mapa operativo de la vista general
+
+La vista general utiliza MapLibre GL JS y muestra solo envíos pendientes de entrega, con su número junto al título. Cada envío aparece como un punto del color de la leyenda en su última ubicación confirmada. Las rutas de los envíos activos se dibujan desde el inicio; al seleccionar un punto, una fila o una incidencia, su ruta destaca y aparece una ficha con llegada prevista, fuente, fecha y antigüedad. El control de pantalla completa amplía el mapa con su leyenda y atribución; se cierra con su botón o Escape y devuelve el foco al control. Si el navegador no admite pantalla completa nativa, MapLibre amplía el mapa al viewport.
+
+Las agrupaciones de marcadores muestran el número de envíos y cuántos necesitan atención. Al abrirlas, el mapa amplía la zona y la lista muestra los envíos del grupo. Los envíos sin coordenadas conservan su acceso desde la lista. El contador de atención, sus tarjetas y los marcadores comparten los mismos criterios: incidencias, información antigua o ausente, eventos sin clasificar y entregas fuera de plazo. El contador de llegadas de hoy usa el día natural de Europe/Madrid.
+
+La cartografía detallada utiliza las teselas públicas de OpenStreetMap, con atribución visible y sin clave de acceso. Su servicio público está sujeto a su [política de uso](https://operations.osmfoundation.org/policies/tiles/); antes de una publicación con tráfico se debe configurar un proveedor adecuado. El fondo local `public/map-land.geojson` contiene los contornos de países de Natural Earth 1:110m, de dominio público, sin Antártida y sin propiedades. Procede de [Natural Earth](https://github.com/nvkelso/natural-earth-vector/blob/master/geojson/ne_110m_admin_0_countries.geojson) y mantiene el contexto geográfico si fallan las teselas. La lista permanece disponible si no hay WebGL. El proceso de MapLibre se empaqueta con Vite mediante `?worker&url` para servirlo localmente también en producción.
+
+El trazado Madrid → Valencia de `src/data/routes/madrid-valencia.json` se obtuvo del [servicio de rutas OSRM](https://project-osrm.org/docs/v26.6.1/http) sobre OpenStreetMap, con geometría completa y simplificación de unos 35 metros para reducir el tamaño. Se guarda en el proyecto para evitar peticiones a un servicio público al abrir la aplicación. La ruta conserva el punto de Perales de Tajuña. Es un itinerario de referencia por carretera, no una ruta certificada para camiones ni un recorrido GPS observado.
+
+Cada `ShipmentLeg.route` admite coordenadas de un trazado y su fuente. En carretera deben proceder de un motor de rutas; en mar, de un itinerario marítimo del operador que respete costas y pasos navegables. El mapa dibuja esas coordenadas sin conectar centros mediante rectas. Si un tramo no tiene geometría válida, conserva el marcador y el acceso al detalle, sin inventar un trazado. El escenario actual contiene un único envío por carretera; no incluye todavía un caso marítimo. El seguimiento GPS en directo requiere integrar una fuente de posiciones del transportista.

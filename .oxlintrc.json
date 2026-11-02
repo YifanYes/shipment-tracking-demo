@@ -9,14 +9,5 @@
     "no-debugger": "error",
     "react/react-in-jsx-scope": "off"
   },
-  "ignorePatterns": ["dist/**", "coverage/**", "node_modules/**", ".husky/_/**"],
-  "overrides": [
-    {
-      "files": ["src/scene/**/*.tsx"],
-      "rules": {
-        "react/no-unknown-property": "off",
-        "react/immutability": "off"
-      }
-    }
-  ]
+  "ignorePatterns": ["dist/**", "coverage/**", "node_modules/**", ".husky/_/**"]
 }

@@ -1,4 +1,5 @@
 import type { DemoDataset, DemoScenario } from '@/domain/contracts'
+import madridValenciaRoute from './routes/madrid-valencia.json'
 
 export const phaseOneDataset: DemoDataset = {
   revision: 1,
@@ -29,7 +30,7 @@ export const phaseOneDataset: DemoDataset = {
       kind: 'warehouse',
       placeLabel: 'Madrid',
       countryCode: 'ES',
-      scenePosition: [-4, 0, 0],
+      coordinates: [-3.7038, 40.4168],
     },
     {
       id: 'destination-valencia',
@@ -37,7 +38,15 @@ export const phaseOneDataset: DemoDataset = {
       kind: 'destination',
       placeLabel: 'Valencia',
       countryCode: 'ES',
-      scenePosition: [4, 0, 0],
+      coordinates: [-0.3763, 39.4699],
+    },
+    {
+      id: 'waypoint-a3-perales',
+      name: 'A-3 · Perales de Tajuña',
+      kind: 'waypoint',
+      placeLabel: 'Perales de Tajuña',
+      countryCode: 'ES',
+      coordinates: [-3.220108, 40.148136],
     },
   ],
   operators: [{ id: 'operator-iberia', name: 'Vía Cargo', modes: ['road'] }],
@@ -59,6 +68,13 @@ export const phaseOneDataset: DemoDataset = {
           originLocationId: 'site-madrid',
           destinationLocationId: 'destination-valencia',
           milestones: ['planned', 'collected', 'in_transit', 'out_for_delivery', 'completed'],
+          route: {
+            coordinates: madridValenciaRoute.map(([longitude, latitude]) => [
+              longitude!,
+              latitude!,
+            ]),
+            source: 'OSRM · OpenStreetMap',
+          },
         },
       ],
       documentIds: [],
@@ -83,11 +99,12 @@ export const phaseOneDataset: DemoDataset = {
       legId: 'leg-es-001-road',
       operatorId: 'operator-iberia',
       rawCode: 'ON_ROUTE',
-      rawMessage: 'Salida de Madrid hacia Valencia. Llegada prevista a las 13:00, hora peninsular.',
+      rawMessage:
+        'En ruta por la A-3 a la altura de Perales de Tajuña. Llegada prevista a las 13:00, hora peninsular.',
       payload: { arrivalAt: '2026-10-31T12:00:00.000Z' },
-      occurredAt: '2026-10-31T09:30:00.000Z',
-      receivedAt: '2026-10-31T09:32:00.000Z',
-      locationId: 'site-madrid',
+      occurredAt: '2026-10-31T09:59:00.000Z',
+      receivedAt: '2026-10-31T09:59:10.000Z',
+      locationId: 'waypoint-a3-perales',
     },
   ],
   documents: [],

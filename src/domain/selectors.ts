@@ -1,5 +1,6 @@
 import type { DemoDataset, EntityId, IsoDateTime, ShipmentView, ShipmentSummary } from './contracts'
 import { canViewShipment, projectShipment, shipmentEvents } from './tracking'
+import { attentionReasons } from './map'
 
 export type { ShipmentView } from './contracts'
 
@@ -10,7 +11,7 @@ export interface TrackingState {
   selectedShipmentId: EntityId | null
 }
 
-/** Apply visibility before deriving any detail, count or scene input. */
+/** Apply visibility before deriving any detail, count or map input. */
 export function selectVisibleShipments(state: TrackingState): ShipmentView[] {
   const { dataset, cutoffAt } = state
   const identity = dataset.identities.find((item) => item.id === state.identityId)
@@ -60,12 +61,7 @@ export function selectSummary(
   return {
     active: views.filter(({ projection }) => projection.lifecycle === 'active').length,
     delivered: views.filter(({ projection }) => projection.lifecycle === 'delivered').length,
-    attention: views.filter(
-      ({ projection }) =>
-        projection.incidentIds.length > 0 ||
-        projection.freshness !== 'current' ||
-        projection.unknownEventIds.length > 0,
-    ).length,
+    attention: views.filter((item) => attentionReasons(item, cutoffAt).length > 0).length,
     upcoming: views.filter(
       ({ projection }) =>
         projection.lifecycle !== 'delivered' &&

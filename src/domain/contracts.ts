@@ -2,7 +2,6 @@
 export type EntityId = string
 export type IsoDateTime = string
 export type TransportMode = 'road' | 'sea'
-export type ScenePosition = readonly [x: number, y: number, z: number]
 
 export interface Account {
   id: EntityId
@@ -27,10 +26,11 @@ export type DemoIdentity =
 export interface LogisticsLocation {
   id: EntityId
   name: string
-  kind: 'factory' | 'warehouse' | 'port' | 'destination'
+  kind: 'factory' | 'warehouse' | 'port' | 'destination' | 'waypoint'
   placeLabel: string
   countryCode: string
-  scenePosition: ScenePosition
+  /** Coordinates of a site or a waypoint reported by an operator event. */
+  coordinates?: readonly [longitude: number, latitude: number]
 }
 
 export interface Operator {
@@ -58,6 +58,11 @@ export interface ShipmentLeg {
   originLocationId: EntityId
   destinationLocationId: EntityId
   milestones: readonly LegStage[]
+  /** Road-network geometry or a supplied maritime itinerary, never an endpoint shortcut. */
+  route?: {
+    coordinates: readonly (readonly [longitude: number, latitude: number])[]
+    source: string
+  }
 }
 
 export interface Shipment {
@@ -161,7 +166,7 @@ export interface ShipmentDocument {
   uploadedAt?: IsoDateTime
 }
 
-/** Derived data. Panels and scene consume the same projection. */
+/** Derived data. Panels and map consume the same projection. */
 export interface ShipmentProjection {
   shipmentId: EntityId
   lifecycle: 'planned' | 'active' | 'delivered'
@@ -178,7 +183,7 @@ export interface ShipmentProjection {
   unknownEventIds: readonly EntityId[]
 }
 
-/** Scoped read model shared by list, detail and scene. No consumer reads the full dataset. */
+/** Scoped read model shared by list, detail and map. No consumer reads the full dataset. */
 export interface ShipmentView {
   shipment: Shipment
   projection: ShipmentProjection
