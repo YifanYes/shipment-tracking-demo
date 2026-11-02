@@ -158,20 +158,26 @@ Estructura prevista:
 
 ```text
 src/
-  app/                 Composición, navegación y proveedores
-  components/ui/       Componentes shadcn/ui compartidos
+  app/                 Composición, layout, navegación y proveedores
   domain/              Tipos, normalización, visibilidad y reglas
-  data/                Fixtures y generación del histórico
+  data/scenarios/      Fixtures, escenarios y generación del histórico
   simulation/          Reloj, escenarios y eventos programados
   store/               Estado compartido y persistencia
-  scene/               Modelos, cámara, selección y rutas
   features/
+    overview/          Métricas y mapa operativo
     shipments/         Cartera y detalle de envíos
     exceptions/        Incidencias, recomendaciones y acciones
     customer/          Experiencia de cliente
     analytics/         Métricas y reporte de IA
-  styles/              Tokens y estilos globales
+  shared/              Componentes shadcn/ui, formato y utilidades
+  styles/              Tema y estilos base
+tests/
+  unit/                Reglas, store y utilidades, con la misma ruta que src/
+  integration/         Recorridos de la aplicación
+  support/             Fixtures y sustitutos compartidos
 ```
+
+Cada funcionalidad contiene `components/`, `lib/`, sus estilos e `index.ts` como API pública. Las convenciones de nombres y dependencias están en README.md.
 
 El dominio devolverá datos sin importar componentes de UI. La escena y los paneles consumirán selectores compartidos. El simulador producirá eventos de dominio. Las animaciones no modificarán estados de negocio.
 
@@ -403,3 +409,7 @@ El documento permite continuar en este chat o abrir uno nuevo sin reconstruir la
 ## Cambio de la vista general: mapa operativo
 
 El 31 de octubre de 2026 el usuario aprobó sustituir la escena 3D de la vista general por un mapa 2D de España con MapLibre. Esta decisión sustituye las referencias anteriores a la escena isométrica para esa vista. Se conserva el perímetro de identidad, el escenario nacional y la navegación al detalle. El mapa representa la última ubicación confirmada, agrupa marcadores y permite seleccionar un recorrido previsto. No implica incorporar seguimiento GPS real ni completar los escenarios de fases posteriores. README.md describe las fuentes de cartografía y las limitaciones del recorrido.
+
+## Reorganización de la estructura
+
+El 2 de noviembre de 2026 se reorganizó el código sin cambiar el comportamiento. Las pruebas pasan a `tests/`; los archivos usan kebab-case; cada funcionalidad expone un `index.ts`; `domain/tracking.ts` se divide en `visibility.ts`, `events.ts` y `projection.ts`; las reglas de atención pasan a `domain/attention.ts` y la geometría del mapa a `features/overview/lib/map-data.ts`; el formato compartido pasa a `shared/lib/format.ts`; los estilos se reparten entre `styles/globals.css`, `app/layout/layout.css` y el CSS de cada funcionalidad. Se retiran las dependencias de Three.js. Al asignar archivos en la fase 2 se deben usar estas rutas.

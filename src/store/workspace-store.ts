@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { phaseOneDataset, phaseOneScenario } from '@/data/phase-one'
+import { nationalDataset, nationalScenario } from '@/data/scenarios/national'
 import { selectVisibleShipments, type TrackingState } from '@/domain/selectors'
 import { advanceScenario } from '@/simulation/advance'
 
@@ -19,9 +19,9 @@ export interface WorkspaceState extends TrackingState {
 /** The factory keeps tests and future demo instances independent. */
 export const createWorkspaceStore = () =>
   create<WorkspaceState>((set) => ({
-    dataset: phaseOneDataset,
-    identityId: phaseOneDataset.identities[0]!.id,
-    cutoffAt: phaseOneDataset.referenceTime,
+    dataset: nationalDataset,
+    identityId: nationalDataset.identities[0]!.id,
+    cutoffAt: nationalDataset.referenceTime,
     selectedShipmentId: null,
     view: 'overview',
     setView: (view) =>
@@ -57,16 +57,16 @@ export const createWorkspaceStore = () =>
         if (
           identity?.role !== 'operations' ||
           !selectVisibleShipments(state).some((item) =>
-            phaseOneScenario.shipmentIds.includes(item.shipment.id),
+            nationalScenario.shipmentIds.includes(item.shipment.id),
           )
         )
           return {}
-        return advanceScenario(state.dataset, phaseOneScenario)
+        return advanceScenario(state.dataset, nationalScenario)
       }),
     resetDemo: () =>
       set((state) => ({
-        dataset: phaseOneDataset,
-        cutoffAt: phaseOneDataset.referenceTime,
+        dataset: nationalDataset,
+        cutoffAt: nationalDataset.referenceTime,
         selectedShipmentId: null,
         view: state.view === 'shipment-detail' ? 'shipments' : state.view,
       })),

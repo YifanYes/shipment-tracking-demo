@@ -1,6 +1,6 @@
 # Contratos de dominio
 
-`contracts.ts` define los tipos compartidos. Los módulos de dominio no importarán React, Zustand ni componentes de UI.
+`contracts.ts` define los tipos compartidos. `visibility.ts` aplica el perímetro de cada identidad, `events.ts` filtra y normaliza eventos, `projection.ts` deriva el estado del envío, `attention.ts` reúne los criterios de atención y llegadas, y `selectors.ts` compone las vistas autorizadas. Los módulos de dominio no importan React, Zustand, MapLibre ni componentes de UI; Oxlint lo comprueba.
 
 ## Reglas de implementación
 
@@ -11,7 +11,7 @@
 - Los eventos conservan la fecha del hecho y la de recepción. La deduplicación usa su ID estable.
 - La normalización puede producir varias señales para un evento. Una señal de ETA o incidencia no implica avance físico.
 - La condición de una incidencia y el estado de atención son independientes.
-- `ShipmentProjection` se calcula desde las mismas entradas para escena y paneles. Las animaciones no la modifican.
+- `ShipmentProjection` se calcula desde las mismas entradas para mapa y paneles. Las animaciones no la modifican.
 - El documento aportado y la liberación aduanera requieren eventos distintos.
 - Las recomendaciones y reportes solo usarán evidencias visibles para la identidad activa.
 - `ReportMetric.value` será null cuando no exista muestra suficiente; las esperas abiertas se separan de duraciones completadas.
@@ -21,9 +21,9 @@
 
 - `DemoDataset` conserva los hechos originales. `referenceTime` es el inicio del reloj; `TrackingState.cutoffAt` es la fecha de corte actual. `revision` aumenta cuando se incorporan eventos nuevos.
 - `canViewShipment` aplica cuenta exacta al cliente y la intersección de centros y cuentas a operaciones. Una identidad desconocida o un perímetro vacío no dan acceso.
-- `selectVisibleShipments` aplica ese perímetro antes de devolver `ShipmentView[]`. Cada vista reúne el envío, su proyección, sus eventos, ubicaciones, operadores y documentos asociados. Listado, detalle y escena reciben estas vistas, sin consultar el dataset completo.
+- `selectVisibleShipments` aplica ese perímetro antes de devolver `ShipmentView[]`. Cada vista reúne el envío, su proyección, sus eventos, ubicaciones, operadores y documentos asociados. Listado, detalle y mapa reciben estas vistas, sin consultar el dataset completo.
 - `selectSelectedShipment` devuelve `ShipmentView | null` y vuelve a comprobar el perímetro. `selectSummary` deriva activos, entregados, envíos que requieren atención y próximas entregas de las vistas ya autorizadas. Próximas entregas cuenta ETA del operador dentro de las siguientes 24 horas, excluyendo entregados. Atención incluye incidencias, información antigua o ausente, códigos pendientes de clasificar y entregas fuera de plazo. La vista general cuenta además las llegadas de hoy según Europe/Madrid, sin cambiar el contador de próximas 24 horas.
-- La escena recibe `shipments`, `selectedId` y `onSelect(id)`. La selección solo contiene el ID del envío. La escena no escribe eventos ni modifica una proyección.
+- El mapa recibe `shipments`, `selectedId` y `onSelect(id)`. La selección solo contiene el ID del envío. El mapa no escribe eventos ni modifica una proyección.
 - `shipmentEvents` filtra envío, tramo y operador. Solo incluye hechos ocurridos y recibidos hasta la fecha de corte. Deduplica por ID, conserva la primera copia y ordena por fecha del hecho, con ID como desempate.
 - `normalizeEvent` devuelve señales conocidas o un código pendiente de clasificación. La fase 1 incorpora el vocabulario de Vía Cargo, `PICKED_UP`, `ON_ROUTE` y `DELIVERED`. Los siguientes adaptadores ampliarán las señales existentes sin modificar eventos originales.
 - `projectShipment` aplica el orden de hitos de cada tramo sin retrocesos. Conserva evidencia y fecha de ETA y ubicación. La fase 1 usa umbrales de 4 horas por carretera y 24 horas por mar para información antigua, excluyendo entregas completadas. La fase 2 ampliará estos umbrales por contexto y completará incidencias y escenarios multimodales.
@@ -33,4 +33,4 @@
 Las métricas históricas, las incidencias y el resto de adaptadores se implementarán en las siguientes fases. Un cambio en estos contratos requiere coordinar a los consumidores antes de seguir en paralelo.
 
 - Las ubicaciones pueden incluir `coordinates` en orden longitud, latitud, y ser centros o puntos de paso `waypoint`. El mapa sitúa los marcadores con las coordenadas de `lastConfirmedLocation`; nunca interpola posiciones entre origen y destino. El escenario nacional confirma un punto de la A-3 mediante su evento `ON_ROUTE`. La selección dentro del mapa es local; `selectShipment` se invoca al abrir el detalle.
-- `ShipmentLeg.route` conserva la geometría del itinerario y su fuente. Los trazados por carretera proceden de un motor de rutas; los marítimos deben aportar un itinerario navegable. `mapRoutes` solo devuelve geometrías válidas de envíos activos, con el mismo criterio de atención que los marcadores. Los tramos sin geometría no se sustituyen por líneas entre extremos. La sección de envíos en curso excluye entregados; el listado y el detalle conservan su acceso.
+- `ShipmentLeg.route` conserva la geometría del itinerario y su fuente. Los trazados por carretera proceden de un motor de rutas; los marítimos deben aportar un itinerario navegable. `mapRoutes`, en `src/features/overview/lib/map-data.ts`, solo devuelve geometrías válidas de envíos activos, con el mismo criterio de atención que los marcadores. Los tramos sin geometría no se sustituyen por líneas entre extremos. La sección de envíos en curso excluye entregados; el listado y el detalle conservan su acceso.

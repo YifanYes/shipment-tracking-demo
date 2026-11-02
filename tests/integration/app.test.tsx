@@ -2,36 +2,15 @@
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { ShipmentView } from '@/domain/selectors'
-import { App } from './App'
-import { useWorkspaceStore } from '@/store/use-workspace-store'
-import { phaseOneDataset } from '@/data/phase-one'
+import { App } from '@/app/app'
+import { useWorkspaceStore } from '@/store/workspace-store'
+import { nationalDataset } from '@/data/scenarios/national'
 
 // The map renderer is checked in the browser; the real overview handles selection and permissions.
-vi.mock('@/features/overview/LogisticsMap', () => ({
-  default: ({
-    shipments,
-    selected,
-    onSelect,
-  }: {
-    shipments: ShipmentView[]
-    selected: ShipmentView | null
-    onSelect: (id: string) => void
-  }) => (
-    <div data-testid="map">
-      {shipments.map(({ shipment, projection }) => (
-        <button
-          key={shipment.id}
-          data-stage={projection.currentStage}
-          aria-pressed={selected?.shipment.id === shipment.id}
-          onClick={() => onSelect(shipment.id)}
-        >
-          Marcador {shipment.reference}
-        </button>
-      ))}
-    </div>
-  ),
-}))
+vi.mock(
+  '@/features/overview/components/logistics-map',
+  () => import('@tests/support/logistics-map-mock'),
+)
 
 let root: Root
 let container: HTMLDivElement
@@ -49,6 +28,10 @@ const click = async (text: string) => {
 const mount = async () => {
   await act(async () => {
     root.render(<App />)
+  })
+  // The map is lazy-loaded; let its (mocked) module resolve before asserting.
+  await act(async () => {
+    await vi.dynamicImportSettled()
   })
 }
 
@@ -86,8 +69,8 @@ describe('primer recorrido de Atlas', () => {
     useWorkspaceStore.setState({
       cutoffAt: '2026-10-31T15:00:00Z',
       dataset: {
-        ...phaseOneDataset,
-        locations: phaseOneDataset.locations.map((location) => ({
+        ...nationalDataset,
+        locations: nationalDataset.locations.map((location) => ({
           ...location,
           coordinates: undefined,
         })),

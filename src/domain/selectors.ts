@@ -1,8 +1,8 @@
 import type { DemoDataset, EntityId, IsoDateTime, ShipmentView, ShipmentSummary } from './contracts'
-import { canViewShipment, projectShipment, shipmentEvents } from './tracking'
-import { attentionReasons } from './map'
-
-export type { ShipmentView } from './contracts'
+import { shipmentEvents } from './events'
+import { projectShipment } from './projection'
+import { canViewShipment } from './visibility'
+import { attentionReasons } from './attention'
 
 export interface TrackingState {
   dataset: DemoDataset

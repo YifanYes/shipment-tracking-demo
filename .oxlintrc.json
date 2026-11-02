@@ -9,5 +9,76 @@
     "no-debugger": "error",
     "react/react-in-jsx-scope": "off"
   },
+  "overrides": [
+    {
+      "files": ["src/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["@/features/*/*"],
+                "message": "Importa una funcionalidad desde su index.ts."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/domain/**", "src/data/**", "src/simulation/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              { "name": "react", "message": "El dominio es TypeScript puro." },
+              { "name": "zustand", "message": "El dominio es TypeScript puro." },
+              { "name": "maplibre-gl", "message": "El dominio es TypeScript puro." }
+            ],
+            "patterns": [
+              {
+                "group": ["@/app/*", "@/features/*", "@/shared/*", "@/store/*"],
+                "message": "El dominio no depende de capas superiores."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/shared/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["@/app/*", "@/features/*", "@/store/*"],
+                "message": "shared no depende de funcionalidades ni del estado de la app."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/features/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["@/app/*", "@/features/*/*"],
+                "message": "Una funcionalidad no importa la app ni el interior de otra."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
   "ignorePatterns": ["dist/**", "coverage/**", "node_modules/**", ".husky/_/**"]
 }

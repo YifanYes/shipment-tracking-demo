@@ -12,11 +12,11 @@ import {
   Radio,
   Truck,
 } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import type { ShipmentView } from '@/domain/selectors'
-import { normalizeEvent } from '@/domain/tracking'
-import { formatTime, stageLabels } from './ShipmentTracking'
+import { Badge } from '@/shared/ui/badge'
+import { Button } from '@/shared/ui/button'
+import type { ShipmentView } from '@/domain/contracts'
+import { normalizeEvent } from '@/domain/events'
+import { formatTime, stageLabels } from '@/shared/lib/format'
 
 export function ShipmentDetail({ item, onBack }: { item: ShipmentView; onBack: () => void }) {
   const headingRef = useRef<HTMLHeadingElement>(null)

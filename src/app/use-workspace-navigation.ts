@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { useWorkspaceStore, type WorkspaceState } from '@/store/use-workspace-store'
+import { useWorkspaceStore, type WorkspaceState } from '@/store/workspace-store'
 
 function workspacePath(state: WorkspaceState) {
   if (state.view === 'shipment-detail' && state.selectedShipmentId) {

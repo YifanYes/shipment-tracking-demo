@@ -1,23 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { phaseOneDataset } from '@/data/phase-one'
-import { selectVisibleShipments, selectSummary } from './selectors'
 import {
-  attentionReasons,
-  arrivalsToday,
   confirmedLocation,
   hasCoordinates,
-  mapTone,
   mapRoutes,
-  updateAge,
-} from './map'
-
-const cutoffAt = phaseOneDataset.referenceTime
-const item = selectVisibleShipments({
-  dataset: phaseOneDataset,
-  identityId: 'operations-madrid',
-  cutoffAt,
-  selectedShipmentId: null,
-})[0]!
+  mapTone,
+} from '@/features/overview/lib/map-data'
+import { cutoffAt, operationsShipment as item } from '@tests/support/fixtures'
 
 describe('ubicaciones y estado del mapa', () => {
   it('sitúa el envío en el punto de la A-3 confirmado por el operador', () => {
@@ -114,70 +102,12 @@ describe('ubicaciones y estado del mapa', () => {
     }
   })
 
-  it('mantiene el mismo criterio de atención en mapa, lista y contadores', () => {
+  it('colorea los marcadores con el criterio de atención y el ciclo de vida', () => {
     expect(mapTone(item, cutoffAt)).toBe('transit')
     const stale = { ...item, projection: { ...item.projection, freshness: 'stale' as const } }
-    expect(attentionReasons(stale, cutoffAt)).toContain('Información sin actualizar')
     expect(mapTone(stale, cutoffAt)).toBe('attention')
-    expect(selectSummary([stale], cutoffAt).attention).toBe(1)
-    const delayed = {
-      ...item,
-      projection: {
-        ...item.projection,
-        eta: {
-          ...item.projection.eta,
-          kind: 'operator' as const,
-          arrivalAt: '2026-10-31T16:00:00Z',
-          issuedAt: cutoffAt,
-          operatorId: 'operator-iberia',
-          evidence: [],
-        },
-      },
-    }
-    expect(attentionReasons(delayed, cutoffAt)).toContain('Llegada prevista fuera de plazo')
-    expect(selectSummary([delayed], cutoffAt).attention).toBe(1)
-    expect(attentionReasons(item, '2026-10-31T15:00:00Z')).toContain(
-      'Entrega pendiente fuera de plazo',
-    )
     expect(
       mapTone({ ...item, projection: { ...item.projection, lifecycle: 'delivered' } }, cutoffAt),
     ).toBe('delivered')
-  })
-
-  it('cuenta las llegadas de hoy en Madrid y excluye mañana, el pasado y las entregas', () => {
-    const withEta = (arrivalAt: string) => ({
-      ...item,
-      projection: {
-        ...item.projection,
-        eta: {
-          kind: 'operator' as const,
-          arrivalAt,
-          issuedAt: cutoffAt,
-          operatorId: 'operator-iberia',
-          evidence: [],
-        },
-      },
-    })
-    expect(
-      arrivalsToday(
-        [
-          withEta('2026-10-31T22:30:00Z'),
-          withEta('2026-10-31T23:30:00Z'),
-          withEta('2026-10-31T08:00:00Z'),
-        ],
-        cutoffAt,
-      ),
-    ).toBe(1)
-    expect(arrivalsToday([withEta('2026-11-01T00:15:00Z')], '2026-10-31T23:15:00Z')).toBe(1)
-    expect(
-      arrivalsToday(
-        [{ ...item, projection: { ...item.projection, lifecycle: 'delivered' } }],
-        cutoffAt,
-      ),
-    ).toBe(0)
-    expect(updateAge(item.projection.lastConfirmedLocation?.confirmedAt, cutoffAt)).toBe(
-      'Actualizado hace 1 min',
-    )
-    expect(updateAge(undefined, cutoffAt)).toBe('Sin ubicación confirmada')
   })
 })

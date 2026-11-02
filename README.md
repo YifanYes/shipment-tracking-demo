@@ -44,7 +44,7 @@ pnpm build
 pnpm preview
 ```
 
-Vitest comprueba las reglas de dominio y los recorridos de interfaz. Comprueban perímetro, selección, códigos desconocidos, orden y duplicados, fecha de corte, antigüedad de información, ETA, entrega y reinicio. Las pruebas de interfaz usan jsdom y sustituyen el renderizador WebGL por el contrato de entradas y selección del mapa. El renderizado y la selección del vehículo real se han comprobado además en navegador.
+Vitest ejecuta las pruebas de `tests/`: reglas de dominio, store, datos del mapa y recorridos de interfaz. Comprueban perímetro, selección, códigos desconocidos, orden y duplicados, fecha de corte, antigüedad de información, ETA, entrega y reinicio. Las pruebas de interfaz usan jsdom y sustituyen el renderizador WebGL por el contrato de entradas y selección del mapa. El renderizado y la selección del vehículo real se han comprobado además en navegador.
 
 ## Lint, formato y commits
 
@@ -63,21 +63,31 @@ pnpm format:check
 
 El hook `pre-commit` ejecuta `pnpm lint` y `pnpm format:check` sobre el proyecto completo. Si alguno falla, el commit se cancela. El hook comprueba los archivos sin modificarlos; usa `pnpm format` y `pnpm lint:fix` para corregir los problemas antes de volver a preparar el commit.
 
-## Estructura inicial
+## Estructura
 
-| Ruta                    | Responsabilidad                                      |
-| ----------------------- | ---------------------------------------------------- |
-| src/app/                | Composición y navegación del espacio de trabajo      |
-| src/components/ui/      | Componentes shadcn/ui sobre Base UI                  |
-| src/domain/             | Contratos y reglas compartidas                       |
-| src/data/               | Dataset sintético y escenario nacional reproducible  |
-| src/simulation/         | Avance del escenario e incorporación de eventos      |
-| src/features/shipments/ | Listado, detalle y presentación del seguimiento      |
-| src/features/overview/  | Mapa operativo, selección y panel de atención        |
-| src/store/              | Dataset, reloj, identidad y selección con Zustand    |
-| src/styles/             | Tokens, estilos globales y utilidades de componentes |
+| Ruta                    | Responsabilidad                                                     |
+| ----------------------- | ------------------------------------------------------------------- |
+| src/app/                | Composición, layout (sidebar y barra superior) y navegación         |
+| src/domain/             | Contratos y reglas: visibilidad, eventos, proyección y atención     |
+| src/data/scenarios/     | Dataset sintético, escenario nacional y trazados de rutas           |
+| src/simulation/         | Avance del escenario e incorporación de eventos                     |
+| src/store/              | Dataset, reloj, identidad y selección con Zustand                   |
+| src/features/overview/  | Métricas, mapa operativo, selección y panel de atención             |
+| src/features/shipments/ | Listado, detalle y presentación del seguimiento                     |
+| src/shared/             | Componentes shadcn/ui, formato de fechas y estados, utilidades      |
+| src/styles/             | Tema, tokens y estilos base comunes                                 |
+| tests/unit/             | Pruebas de dominio, store, funcionalidades y utilidades compartidas |
+| tests/integration/      | Recorridos de la aplicación con jsdom                               |
+| tests/support/          | Fixtures y sustitutos compartidos por las pruebas                   |
 
-Los tipos compartidos están en `src/domain/contracts.ts`. Las convenciones y reglas de interpretación están en `src/domain/README.md`. Los módulos de dominio no dependerán de React ni de la escena.
+Convenciones:
+
+- Los archivos usan kebab-case; los componentes exportados, PascalCase.
+- Cada funcionalidad agrupa `components/`, `lib/` y sus estilos, y expone su API pública en `index.ts`. Fuera de la funcionalidad solo se importa ese `index.ts`.
+- Las dependencias van en un sentido: `app → features → shared/store → domain`. `domain`, `data` y `simulation` no importan React, Zustand, MapLibre ni capas superiores; `shared` no importa funcionalidades, store ni app. Oxlint hace cumplir estas reglas con `no-restricted-imports`.
+- Las pruebas viven en `tests/` y replican la ruta del código que comprueban. Importan el código con `@/` y el soporte con `@tests/`. `tsconfig.test.json` incluye las pruebas en `pnpm typecheck`.
+
+Los tipos compartidos están en `src/domain/contracts.ts`. Las convenciones y reglas de interpretación están en `src/domain/README.md`.
 
 ## Componentes y estilos
 
@@ -132,6 +142,6 @@ Las agrupaciones de marcadores muestran el número de envíos y cuántos necesit
 
 La cartografía detallada utiliza las teselas públicas de OpenStreetMap, con atribución visible y sin clave de acceso. Su servicio público está sujeto a su [política de uso](https://operations.osmfoundation.org/policies/tiles/); antes de una publicación con tráfico se debe configurar un proveedor adecuado. El fondo local `public/map-land.geojson` contiene los contornos de países de Natural Earth 1:110m, de dominio público, sin Antártida y sin propiedades. Procede de [Natural Earth](https://github.com/nvkelso/natural-earth-vector/blob/master/geojson/ne_110m_admin_0_countries.geojson) y mantiene el contexto geográfico si fallan las teselas. La lista permanece disponible si no hay WebGL. El proceso de MapLibre se empaqueta con Vite mediante `?worker&url` para servirlo localmente también en producción.
 
-El trazado Madrid → Valencia de `src/data/routes/madrid-valencia.json` se obtuvo del [servicio de rutas OSRM](https://project-osrm.org/docs/v26.6.1/http) sobre OpenStreetMap, con geometría completa y simplificación de unos 35 metros para reducir el tamaño. Se guarda en el proyecto para evitar peticiones a un servicio público al abrir la aplicación. La ruta conserva el punto de Perales de Tajuña. Es un itinerario de referencia por carretera, no una ruta certificada para camiones ni un recorrido GPS observado.
+El trazado Madrid → Valencia de `src/data/scenarios/routes/madrid-valencia.json` se obtuvo del [servicio de rutas OSRM](https://project-osrm.org/docs/v26.6.1/http) sobre OpenStreetMap, con geometría completa y simplificación de unos 35 metros para reducir el tamaño. Se guarda en el proyecto para evitar peticiones a un servicio público al abrir la aplicación. La ruta conserva el punto de Perales de Tajuña. Es un itinerario de referencia por carretera, no una ruta certificada para camiones ni un recorrido GPS observado.
 
 Cada `ShipmentLeg.route` admite coordenadas de un trazado y su fuente. En carretera deben proceder de un motor de rutas; en mar, de un itinerario marítimo del operador que respete costas y pasos navegables. El mapa dibuja esas coordenadas sin conectar centros mediante rectas. Si un tramo no tiene geometría válida, conserva el marcador y el acceso al detalle, sin inventar un trazado. El escenario actual contiene un único envío por carretera; no incluye todavía un caso marítimo. El seguimiento GPS en directo requiere integrar una fuente de posiciones del transportista.

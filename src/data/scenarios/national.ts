@@ -1,7 +1,7 @@
 import type { DemoDataset, DemoScenario } from '@/domain/contracts'
 import madridValenciaRoute from './routes/madrid-valencia.json'
 
-export const phaseOneDataset: DemoDataset = {
+export const nationalDataset: DemoDataset = {
   revision: 1,
   referenceTime: '2026-10-31T10:00:00.000Z',
   accounts: [
@@ -110,7 +110,7 @@ export const phaseOneDataset: DemoDataset = {
   documents: [],
 }
 
-export const phaseOneScenario: DemoScenario = {
+export const nationalScenario: DemoScenario = {
   id: 'national-on-time',
   name: 'Entrega nacional a tiempo',
   shipmentIds: ['shipment-es-001'],

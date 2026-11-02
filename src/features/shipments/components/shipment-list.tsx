@@ -1,29 +1,7 @@
 import { ChevronRight, Package, Truck } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
-import type { LegStage } from '@/domain/contracts'
-import type { ShipmentView } from '@/domain/selectors'
-
-export const stageLabels: Record<LegStage, string> = {
-  planned: 'Planificado',
-  collected: 'Recogido',
-  at_origin_terminal: 'En terminal de origen',
-  loaded: 'Cargado',
-  in_transit: 'En tránsito',
-  at_destination_terminal: 'En terminal de destino',
-  customs: 'En aduana',
-  out_for_delivery: 'En reparto',
-  completed: 'Entregado',
-}
-
-export function formatTime(value: string) {
-  return new Intl.DateTimeFormat('es-ES', {
-    timeZone: 'Europe/Madrid',
-    day: '2-digit',
-    month: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(value))
-}
+import { Badge } from '@/shared/ui/badge'
+import type { ShipmentView } from '@/domain/contracts'
+import { formatTime, stageLabels } from '@/shared/lib/format'
 
 export function ShipmentList({
   shipments,

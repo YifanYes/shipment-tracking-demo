@@ -12,14 +12,9 @@ import {
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'
 import type { FeatureCollection, Point } from 'geojson'
 import type { ShipmentView } from '@/domain/contracts'
-import {
-  attentionReasons,
-  confirmedLocation,
-  hasCoordinates,
-  mapRoutes,
-  mapTone,
-} from '@/domain/map'
-import { stageLabels } from '@/features/shipments/ShipmentTracking'
+import { attentionReasons } from '@/domain/attention'
+import { stageLabels } from '@/shared/lib/format'
+import { confirmedLocation, hasCoordinates, mapRoutes, mapTone } from '../lib/map-data'
 import 'maplibre-gl/dist/maplibre-gl.css'
 
 setWorkerUrl(workerUrl)

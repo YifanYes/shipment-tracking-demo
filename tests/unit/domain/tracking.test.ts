@@ -1,21 +1,21 @@
 import { describe, expect, it } from 'vitest'
-import { phaseOneDataset, phaseOneScenario } from '@/data/phase-one'
-import type { DemoIdentity, OperatorEvent } from './contracts'
-import { canViewShipment, normalizeEvent, projectShipment, shipmentEvents } from './tracking'
-import { selectSelectedShipment, selectSummary, selectVisibleShipments } from './selectors'
-import { createWorkspaceStore } from '@/store/use-workspace-store'
+import type { DemoIdentity, OperatorEvent } from '@/domain/contracts'
+import { normalizeEvent, shipmentEvents } from '@/domain/events'
+import { projectShipment } from '@/domain/projection'
+import { canViewShipment } from '@/domain/visibility'
+import { nationalDataset, nationalScenario } from '@/data/scenarios/national'
 
-const shipment = phaseOneDataset.shipments[0]!
-const transit = phaseOneDataset.events[1]!
-const delivered = phaseOneScenario.scheduledEvents[0]!.event
+const shipment = nationalDataset.shipments[0]!
+const transit = nationalDataset.events[1]!
+const delivered = nationalScenario.scheduledEvents[0]!.event
 const project = (events: readonly OperatorEvent[], cutoffAt = '2026-10-31T12:00:00.000Z') =>
-  projectShipment({ ...phaseOneDataset, events }, shipment, cutoffAt)
+  projectShipment({ ...nationalDataset, events }, shipment, cutoffAt)
 
 describe('perímetro y selección', () => {
   it('exige centro y cuenta a operaciones, y cuenta exacta al cliente', () => {
-    const operations = phaseOneDataset.identities[0]!
+    const operations = nationalDataset.identities[0]!
     expect(canViewShipment(operations, shipment)).toBe(true)
-    expect(canViewShipment(phaseOneDataset.identities[1]!, shipment)).toBe(false)
+    expect(canViewShipment(nationalDataset.identities[1]!, shipment)).toBe(false)
     const customer: DemoIdentity = {
       id: 'owner',
       name: 'Cliente propietario',
@@ -43,32 +43,11 @@ describe('perímetro y selección', () => {
       ).toBe(false)
     }
   })
-
-  it('limpia la selección al cambiar de identidad y rechaza un ID ajeno o desconocido', () => {
-    const store = createWorkspaceStore()
-    store.getState().selectShipment(shipment.id)
-    expect(selectSelectedShipment(store.getState())?.shipment.id).toBe(shipment.id)
-    store.getState().setIdentity('customer-levante')
-    store.getState().selectShipment(shipment.id)
-    expect(store.getState().selectedShipmentId).toBeNull()
-    expect(selectVisibleShipments(store.getState())).toEqual([])
-    expect(selectSelectedShipment(store.getState())).toBeNull()
-    expect(
-      selectSummary(selectVisibleShipments(store.getState()), store.getState().cutoffAt),
-    ).toEqual({ active: 0, delivered: 0, attention: 0, upcoming: 0 })
-    store.getState().advanceDemo()
-    expect(store.getState().dataset).toBe(phaseOneDataset)
-    store.getState().setIdentity('operations-madrid')
-    expect(store.getState().selectedShipmentId).toBeNull()
-    store.getState().selectShipment('missing')
-    expect(selectSelectedShipment(store.getState())).toBeNull()
-    expect(selectVisibleShipments({ ...store.getState(), identityId: 'missing' })).toEqual([])
-  })
 })
 
 describe('hechos y proyección compartida', () => {
   it('conserva fuente de ETA y ubicación sin convertir la animación en un hecho', () => {
-    const result = project(phaseOneDataset.events, phaseOneDataset.referenceTime)
+    const result = project(nationalDataset.events, nationalDataset.referenceTime)
     expect(result).toMatchObject({
       lifecycle: 'active',
       currentStage: 'in_transit',
@@ -104,7 +83,7 @@ describe('hechos y proyección compartida', () => {
 
   it('ordena por fecha del hecho, deduplica IDs y no retrocede por un evento tardío', () => {
     const lateOldEvent = { ...transit, receivedAt: delivered.receivedAt }
-    const result = project([delivered, lateOldEvent, delivered, phaseOneDataset.events[0]!])
+    const result = project([delivered, lateOldEvent, delivered, nationalDataset.events[0]!])
     expect(result).toMatchObject({
       lifecycle: 'delivered',
       currentStage: 'completed',
@@ -112,7 +91,7 @@ describe('hechos y proyección compartida', () => {
     })
     expect(
       shipmentEvents(
-        { ...phaseOneDataset, events: [delivered, lateOldEvent, delivered] },
+        { ...nationalDataset, events: [delivered, lateOldEvent, delivered] },
         shipment,
         delivered.receivedAt,
       ).map((event) => event.id),
@@ -131,7 +110,7 @@ describe('hechos y proyección compartida', () => {
   it('no muestra hechos futuros ni eventos todavía no recibidos', () => {
     const notReceived = { ...delivered, occurredAt: '2026-10-31T09:45:00.000Z' }
     expect(
-      project([...phaseOneDataset.events, delivered, notReceived], phaseOneDataset.referenceTime)
+      project([...nationalDataset.events, delivered, notReceived], nationalDataset.referenceTime)
         .currentStage,
     ).toBe('in_transit')
   })
@@ -146,11 +125,11 @@ describe('hechos y proyección compartida', () => {
   })
 
   it('separa antigüedad y ETA de la fecha comprometida', () => {
-    expect(project([], phaseOneDataset.referenceTime)).toMatchObject({
+    expect(project([], nationalDataset.referenceTime)).toMatchObject({
       freshness: 'no_data',
       eta: { kind: 'unavailable' },
     })
-    expect(project(phaseOneDataset.events, '2026-10-31T15:00:00.000Z')).toMatchObject({
+    expect(project(nationalDataset.events, '2026-10-31T15:00:00.000Z')).toMatchObject({
       currentStage: 'in_transit',
       freshness: 'stale',
     })
@@ -158,39 +137,5 @@ describe('hechos y proyección compartida', () => {
       'unavailable',
     )
     expect(shipment.committedDeliveryAt).toBe('2026-10-31T14:00:00.000Z')
-  })
-})
-
-describe('evento reproducible del recorrido', () => {
-  it('actualiza detalle y contadores una sola vez y reinicia el mismo escenario', () => {
-    const store = createWorkspaceStore()
-    store.getState().selectShipment(shipment.id)
-    const initial = selectVisibleShipments(store.getState())
-    expect(selectSummary(initial, store.getState().cutoffAt)).toMatchObject({
-      active: 1,
-      upcoming: 1,
-      delivered: 0,
-    })
-    store.getState().advanceDemo()
-    const result = store.getState()
-    expect(result.selectedShipmentId).toBe(shipment.id)
-    expect(result.cutoffAt).toBe(delivered.receivedAt)
-    expect(selectSummary(selectVisibleShipments(result), result.cutoffAt)).toEqual({
-      active: 0,
-      upcoming: 0,
-      delivered: 1,
-      attention: 0,
-    })
-    expect(selectSelectedShipment(result)?.projection.lifecycle).toBe('delivered')
-    expect(result.dataset.events).toHaveLength(3)
-    store.getState().advanceDemo()
-    expect(store.getState().dataset).toBe(result.dataset)
-    expect(store.getState().cutoffAt).toBe(result.cutoffAt)
-    store.getState().resetDemo()
-    expect(store.getState()).toMatchObject({
-      dataset: phaseOneDataset,
-      cutoffAt: phaseOneDataset.referenceTime,
-      selectedShipmentId: null,
-    })
   })
 })

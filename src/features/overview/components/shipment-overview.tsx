@@ -12,17 +12,11 @@ import {
   X,
 } from 'lucide-react'
 import type { ShipmentView } from '@/domain/contracts'
-import {
-  attentionReasons,
-  confirmedLocation,
-  hasCoordinates,
-  mapTone,
-  updateAge,
-} from '@/domain/map'
-import { formatTime, stageLabels } from '@/features/shipments/ShipmentTracking'
-import './overview.css'
+import { attentionReasons } from '@/domain/attention'
+import { formatTime, stageLabels, updateAge } from '@/shared/lib/format'
+import { confirmedLocation, hasCoordinates, mapTone } from '../lib/map-data'
 
-const LogisticsMap = lazy(() => import('./LogisticsMap'))
+const LogisticsMap = lazy(() => import('./logistics-map'))
 
 interface Props {
   shipments: readonly ShipmentView[]
