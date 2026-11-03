@@ -1,16 +1,18 @@
 import { RotateCcw, SkipForward } from 'lucide-react'
+import { formatTime } from '@/shared/lib/format'
 import { Button } from '@/shared/ui/button'
 import type { WorkspaceView } from '@/store/workspace-store'
-import { navigation } from '../navigation'
+import type { NavigationItem } from '../navigation'
 
 interface Props {
   view: WorkspaceView
   collapsed: boolean
-  onNavigate: (view: (typeof navigation)[number]['id']) => void
-  demoControls: { canAdvance: boolean; onAdvance: () => void; onReset: () => void } | null
+  items: readonly NavigationItem[]
+  onNavigate: (view: NavigationItem['id']) => void
+  demoControls: { nextEventAt: string | null; onAdvance: () => void; onReset: () => void } | null
 }
 
-export function Sidebar({ view, collapsed, onNavigate, demoControls }: Props) {
+export function Sidebar({ view, collapsed, items, onNavigate, demoControls }: Props) {
   return (
     <aside className="sidebar" aria-label="Menú principal" data-collapsed={collapsed}>
       <div className="sidebar-header">
@@ -21,7 +23,7 @@ export function Sidebar({ view, collapsed, onNavigate, demoControls }: Props) {
       </div>
       <div className="workspace-label">CONTROL LOGÍSTICO</div>
       <nav id="workspace-navigation" className="navigation" aria-label="Navegación">
-        {navigation.map(({ id, label, icon: Icon }) => (
+        {items.map(({ id, label, icon: Icon }) => (
           <Button
             key={id}
             variant="ghost"
@@ -47,14 +49,15 @@ export function Sidebar({ view, collapsed, onNavigate, demoControls }: Props) {
           <Button
             variant="outline"
             className="sidebar-demo-button"
-            disabled={!demoControls.canAdvance}
+            disabled={!demoControls.nextEventAt}
             onClick={demoControls.onAdvance}
-            aria-label="Confirmar entrega · +2 h"
-            title="Confirmar entrega · +2 h"
+            aria-label="Siguiente evento"
+            title="Siguiente evento"
           >
             <SkipForward size={16} aria-hidden="true" />
             <span className="sidebar-action-label">
-              Confirmar entrega<small>+2 h</small>
+              Siguiente evento
+              {demoControls.nextEventAt && <small>{formatTime(demoControls.nextEventAt)}</small>}
             </span>
           </Button>
           <Button

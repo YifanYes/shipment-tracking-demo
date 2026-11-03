@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { selectSelectedShipment, selectSummary, selectVisibleShipments } from '@/domain/selectors'
 import { nationalDataset, nationalScenario } from '@/data/scenarios/national'
+import { nationalSeed } from '@/data/scenarios'
 import { createWorkspaceStore } from '@/store/workspace-store'
 
 const shipment = nationalDataset.shipments[0]!
@@ -8,7 +9,7 @@ const delivered = nationalScenario.scheduledEvents[0]!.event
 
 describe('perímetro de la sesión', () => {
   it('limpia la selección al cambiar de identidad y rechaza un ID ajeno o desconocido', () => {
-    const store = createWorkspaceStore()
+    const store = createWorkspaceStore(nationalSeed)
     store.getState().selectShipment(shipment.id)
     expect(selectSelectedShipment(store.getState())?.shipment.id).toBe(shipment.id)
     store.getState().setIdentity('customer-levante')
@@ -31,7 +32,7 @@ describe('perímetro de la sesión', () => {
 
 describe('evento reproducible del recorrido', () => {
   it('actualiza detalle y contadores una sola vez y reinicia el mismo escenario', () => {
-    const store = createWorkspaceStore()
+    const store = createWorkspaceStore(nationalSeed)
     store.getState().selectShipment(shipment.id)
     const initial = selectVisibleShipments(store.getState())
     expect(selectSummary(initial, store.getState().cutoffAt)).toMatchObject({

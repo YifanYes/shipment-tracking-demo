@@ -1,14 +1,15 @@
 import { useEffect, useMemo } from 'react'
-import { ChartNoAxesCombined, Package } from 'lucide-react'
 import { arrivalsToday } from '@/domain/attention'
 import { selectSummary, selectVisibleShipments } from '@/domain/selectors'
 import { OverviewMetrics, ShipmentOverview } from '@/features/overview'
+import { AnalyticsReport } from '@/features/analytics'
+import { CustomerHome } from '@/features/customer'
 import { ShipmentDetail, ShipmentList } from '@/features/shipments'
-import { useWorkspaceStore } from '@/store/workspace-store'
+import { selectNextEventAt, useWorkspaceStore } from '@/store/workspace-store'
 import { Sidebar } from './layout/sidebar'
 import { Topbar } from './layout/topbar'
 import './layout/layout.css'
-import { navigation } from './navigation'
+import { navigationFor } from './navigation'
 import { useWorkspaceNavigation } from './use-workspace-navigation'
 
 export function App() {
@@ -17,11 +18,12 @@ export function App() {
   const summary = selectSummary(shipments, state.cutoffAt)
   const selected = shipments.find((item) => item.shipment.id === state.selectedShipmentId)
   const identity = state.dataset.identities.find((item) => item.id === state.identityId)!
+  const audience = identity.role
   const { view, setView, sidebarCollapsed, toggleSidebar } = state
   const pageTitle =
     view === 'shipment-detail'
       ? 'Detalle del envío'
-      : (navigation.find((item) => item.id === view)?.label ?? 'Vista general')
+      : (navigationFor(identity.role).find((item) => item.id === view)?.label ?? 'Vista general')
   useWorkspaceNavigation()
 
   useEffect(() => {
@@ -36,11 +38,12 @@ export function App() {
       <Sidebar
         view={view}
         collapsed={sidebarCollapsed}
+        items={navigationFor(identity.role)}
         onNavigate={setView}
         demoControls={
-          identity.role === 'operations' && shipments.length > 0
+          identity.role === 'operations'
             ? {
-                canAdvance: summary.delivered !== shipments.length,
+                nextEventAt: selectNextEventAt(state),
                 onAdvance: state.advanceDemo,
                 onReset: state.resetDemo,
               }
@@ -60,7 +63,14 @@ export function App() {
         />
 
         <main id="main-content" className="main-content" aria-labelledby="page-title" tabIndex={-1}>
-          {view === 'overview' && (
+          {view === 'overview' && audience === 'customer' && (
+            <CustomerHome
+              shipments={shipments}
+              cutoffAt={state.cutoffAt}
+              onOpenShipment={state.selectShipment}
+            />
+          )}
+          {view === 'overview' && audience === 'operations' && (
             <>
               <OverviewMetrics
                 active={summary.active}
@@ -77,44 +87,35 @@ export function App() {
           )}
 
           {view === 'shipments' && (
-            <ShipmentList shipments={shipments} onSelect={state.selectShipment} />
+            <ShipmentList
+              shipments={shipments}
+              cutoffAt={state.cutoffAt}
+              audience={audience}
+              onSelect={state.selectShipment}
+            />
           )}
           {selected && view === 'shipment-detail' && (
             <ShipmentDetail
               key={selected.shipment.id}
               item={selected}
+              cutoffAt={state.cutoffAt}
+              audience={audience}
               onBack={() => setView('shipments')}
+              onOpenShipment={state.selectShipment}
             />
           )}
-          {view === 'analytics' && (
-            <EmptyPage
-              icon={ChartNoAxesCombined}
-              title="No hay histórico de envíos"
-              description="El reporte estará disponible cuando haya envíos históricos para analizar."
+          {view === 'analytics' && audience === 'operations' && (
+            <AnalyticsReport
+              key={state.identityId}
+              shipments={shipments}
+              identityId={state.identityId}
+              cutoffAt={state.cutoffAt}
+              datasetRevision={state.dataset.revision}
+              onOpenShipment={state.selectShipment}
             />
           )}
         </main>
       </div>
     </div>
-  )
-}
-
-function EmptyPage({
-  icon: Icon,
-  title,
-  description,
-}: {
-  icon: typeof Package
-  title: string
-  description: string
-}) {
-  return (
-    <section className="empty-page">
-      <div className="empty-icon">
-        <Icon size={30} />
-      </div>
-      <h2>{title}</h2>
-      <p>{description}</p>
-    </section>
   )
 }

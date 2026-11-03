@@ -27,10 +27,55 @@
 - `shipmentEvents` filtra envío, tramo y operador. Solo incluye hechos ocurridos y recibidos hasta la fecha de corte. Deduplica por ID, conserva la primera copia y ordena por fecha del hecho, con ID como desempate.
 - `normalizeEvent` devuelve señales conocidas o un código pendiente de clasificación. La fase 1 incorpora el vocabulario de Vía Cargo, `PICKED_UP`, `ON_ROUTE` y `DELIVERED`. Los siguientes adaptadores ampliarán las señales existentes sin modificar eventos originales.
 - `projectShipment` aplica el orden de hitos de cada tramo sin retrocesos. Conserva evidencia y fecha de ETA y ubicación. La fase 1 usa umbrales de 4 horas por carretera y 24 horas por mar para información antigua, excluyendo entregas completadas. La fase 2 ampliará estos umbrales por contexto y completará incidencias y escenarios multimodales.
-- `advanceScenario` incorpora los eventos del escenario hasta su último desplazamiento temporal, sin duplicar IDs que ya existen. La fase 1 expone un único avance de dos horas. Reproducir, pausar y avanzar por pasos corresponden a la fase 3.
+- La fase 1 incorporaba el evento de entrega con un único avance de dos horas. La fase 2 lo sustituye por `simulation/clock.ts`, descrito más abajo.
 - `setIdentity` valida el ID y limpia selección y vista. `selectShipment` rechaza IDs ajenos o inexistentes y abre la vista `shipment-detail` si el envío está autorizado. `setView` cambia de sección y limpia la selección. `resetDemo` restaura dataset y reloj sin cambiar la identidad, y vuelve al listado si el detalle estaba abierto. No hay persistencia todavía.
 
 Las métricas históricas, las incidencias y el resto de adaptadores se implementarán en las siguientes fases. Un cambio en estos contratos requiere coordinar a los consumidores antes de seguir en paralelo.
 
 - Las ubicaciones pueden incluir `coordinates` en orden longitud, latitud, y ser centros o puntos de paso `waypoint`. El mapa sitúa los marcadores con las coordenadas de `lastConfirmedLocation`; nunca interpola posiciones entre origen y destino. El escenario nacional confirma un punto de la A-3 mediante su evento `ON_ROUTE`. La selección dentro del mapa es local; `selectShipment` se invoca al abrir el detalle.
 - `ShipmentLeg.route` conserva la geometría del itinerario y su fuente. Los trazados por carretera proceden de un motor de rutas; los marítimos deben aportar un itinerario navegable. `mapRoutes`, en `src/features/overview/lib/map-data.ts`, solo devuelve geometrías válidas de envíos activos, con el mismo criterio de atención que los marcadores. Los tramos sin geometría no se sustituyen por líneas entre extremos. La sección de envíos en curso excluye entregados; el listado y el detalle conservan su acceso.
+
+## Contratos de la fase 2
+
+- `DemoSeed` reúne el dataset inicial y los escenarios. `data/scenarios/index.ts` exporta `demoSeed`, el dataset completo, y `nationalSeed`, el envío de la fase 1 que conservan sus pruebas. El store recibe una semilla y `resetDemo` vuelve a ella.
+- `applyScheduledEvents(dataset, scenarios, cutoffAt)` incorpora los eventos programados liberados hasta la fecha de corte, una sola vez por ID. `nextScheduledAt` devuelve la siguiente liberación. `advanceDemo` mueve el reloj a esa fecha; solo operaciones controla la demo.
+- `ShipmentProjection.legStages` contiene el hito más avanzado confirmado de cada tramo. Detalle y mapa lo usan en lugar de recalcular hitos.
+- `ShipmentView.incidents` contiene las incidencias activas y resueltas de `deriveIncidents`, con IDs estables y evidencias del evento o documento. `projection.incidentIds` contiene solo las activas. La atención de cada incidencia es `unreviewed` hasta las acciones de la fase 3.
+- `buildLogisticsReport` recibe vistas ya autorizadas, filtros, fecha de corte y revisión del dataset. Las listas de filtros vacías equivalen a todo lo visible. La fase 2 entrega las métricas; la fase 3, hallazgos y recomendaciones.
+
+### Datos de la fase 2
+
+- `data/scenarios/` separa la red (`network.ts`), las rutas (`routes.ts`), los cinco escenarios, el resto de envíos activos (`active.ts`) y el histórico (`history.ts`). `buildDemoSeed()` es puro: dos construcciones son iguales. El histórico usa un PRNG con semilla fija y fechas relativas a `referenceTime`.
+- Los trazados por carretera proceden de OSRM, simplificados a unos 35 m (60 m por encima de 600 km). Los marítimos son itinerarios sintéticos por mar abierto y estrechos. Los envíos históricos no tienen trazado.
+- Los eventos programados se reciben exactamente al liberarse (`referenceTime + offsetMinutes`); la fecha del hecho puede ser anterior.
+
+### Vocabularios y normalización
+
+- Cada operador tiene códigos propios y su clave de ETA en `payload`, que siempre se refiere al destino final: Vía Cargo `arrivalAt`, Transportes Cierzo `llegadaPrevista`, Naviera Boreal `eta`, Puente Aduanas `deliveryEta`. Un código o una clave de otro operador queda pendiente de clasificar.
+- Un evento de solo ETA sin fecha válida queda pendiente de clasificar.
+- En la última milla con aduana, `CUSTOMS_RELEASED` pasa el tramo de `customs` a `collected`: mercancía liberada para el transportista. Es el único evento que sale de aduana.
+
+### Proyección
+
+- La antigüedad se mide desde el último evento conocido, por fecha del hecho. Los códigos desconocidos no la renuevan. Umbrales: carretera 4 h, puerto o espera entre tramos en un puerto 24 h, buque navegando 36 h, aduana 48 h. Un envío entregado siempre está al día.
+- ETA: la última del operador, salvo que haya vencido sin entrega o que una retención se haya abierto después de emitirla. Sin ETA del operador, se estima un intervalo solo con el buque navegando, información al día, trazados disponibles y sin aduana pendiente (14–18 nudos, 6–24 h de puerto, 60–75 km/h). En otro caso, `unavailable` con el motivo.
+
+### Incidencias
+
+- Retraso: aviso del operador, ETA posterior al compromiso o compromiso vencido sin entrega (`incident-<envío>-overdue`). Se resuelve con la entrega o con una ETA posterior dentro del plazo, antes de que venza. Severidad alta si supera 24 h o el plazo ha vencido.
+- Aduana y retención en terminal: abiertas y resueltas solo por los eventos de retención y liberación. Aduana tiene severidad alta.
+- Documento pendiente: un documento `missing` del envío, o uno solicitado por `DOC_REQUIRED` (`payload.documentId`) antes de aportarse. Se resuelve en `uploadedAt`, sin liberar la aduana. Alta mientras la aduana siga retenida.
+- Información antigua: solo mientras dura; no se reconstruyen episodios pasados.
+- IDs: `incident-<evento>-<tipo>`, `incident-<documento>-missing`, `incident-<envío>-stale-<último evento>`. La atención siempre es `unreviewed`.
+
+### Métricas del reporte
+
+- Un envío entra en el periodo si se creó entre `from` y `to`. El filtro de operadores incluye envíos con algún tramo suyo. Las duraciones se calculan desde los eventos de cada vista.
+- Las duraciones completadas requieren 3 observaciones; las esperas abiertas (`-open`) se muestran desde 1 y miden hasta la fecha de corte.
+- `delays`: `delayed-shipments`, `on-time-rate` y `average-delay` sobre entregados, y `overdue-open` sobre envíos en curso.
+- `legs`: `leg-duration:<modo>`, del primer hito confirmado a la finalización del tramo.
+- `ports`: `port-dwell:<puerto>`, de la entrada en terminal a la salida del buque.
+- `customs`: `customs-time:<puerto>`, de la declaración a la liberación.
+- `sites`: `site-pickup:<centro>`, de la creación a la recogida.
+- `operators`: `operator-transit:<operador>`, horas de movimiento por cada 100 km en línea recta, en tramos de al menos 50 km.
+- `limitations` enumera envíos sin eventos, envíos con códigos pendientes y métricas sin muestra suficiente.

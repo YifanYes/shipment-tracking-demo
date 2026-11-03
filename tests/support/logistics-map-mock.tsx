@@ -1,17 +1,26 @@
-import type { ShipmentView } from '@/domain/contracts'
+import type { LogisticsMapProps } from '@/features/overview/components/logistics-map'
 
 /** Stands in for the WebGL map with the same inputs and selection contract. */
 export default function LogisticsMapMock({
   shipments,
+  sites,
   selected,
+  selectedSiteId,
   onSelect,
-}: {
-  shipments: ShipmentView[]
-  selected: ShipmentView | null
-  onSelect: (id: string) => void
-}) {
+  onSiteSelect,
+}: LogisticsMapProps) {
   return (
     <div data-testid="map">
+      {sites.map((site) => (
+        <button
+          key={site.id}
+          data-kind={site.kind}
+          aria-pressed={selectedSiteId === site.id}
+          onClick={() => onSiteSelect(selectedSiteId === site.id ? null : site.id)}
+        >
+          Filtrar envíos por {site.name}
+        </button>
+      ))}
       {shipments.map(({ shipment, projection }) => (
         <button
           key={shipment.id}

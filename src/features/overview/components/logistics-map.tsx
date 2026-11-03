@@ -1,33 +1,45 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { LocateFixed, Minus, Plus } from 'lucide-react'
+import { Anchor, Flag, LocateFixed, Minus, Plus, Ship, Truck, Warehouse } from 'lucide-react'
 import {
+  type ExpressionSpecification,
   FullscreenControl,
   GeoJSONSource,
-  LngLatBounds,
   Map as LibreMap,
   Marker,
   setWorkerUrl,
 } from 'maplibre-gl'
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'
-import type { FeatureCollection, Point } from 'geojson'
 import type { ShipmentView } from '@/domain/contracts'
 import { attentionReasons } from '@/domain/attention'
 import { stageLabels } from '@/shared/lib/format'
-import { confirmedLocation, hasCoordinates, mapRoutes, mapTone } from '../lib/map-data'
+import {
+  type MapBounds,
+  confirmedLocation,
+  currentLeg,
+  hasCoordinates,
+  mapBounds,
+  mapPoints,
+  mapRoutes,
+  mapTone,
+} from '../lib/map-data'
+import { type MapSite, siteKindLabels } from '../lib/network'
 import 'maplibre-gl/dist/maplibre-gl.css'
 
 setWorkerUrl(workerUrl)
 
-interface Props {
+export interface LogisticsMapProps {
   shipments: readonly ShipmentView[]
+  sites: readonly MapSite[]
   selected: ShipmentView | null
+  selectedSiteId: string | null
   cutoffAt: string
   onSelect: (id: string) => void
+  onSiteSelect: (id: string | null) => void
   onClusterSelect: (ids: string[]) => void
 }
 
-interface MapMarker {
+interface ShipmentMarker {
   key: string
   element: HTMLDivElement
   marker: Marker
@@ -38,68 +50,132 @@ interface MapMarker {
   attention: number
 }
 
-function pointsFor(shipments: Props['shipments'], cutoffAt: string): FeatureCollection<Point> {
-  return {
-    type: 'FeatureCollection',
-    features: shipments.flatMap((item) => {
-      const location = confirmedLocation(item)
-      return hasCoordinates(location)
-        ? [
-            {
-              type: 'Feature' as const,
-              properties: {
-                shipmentId: item.shipment.id,
-                attention: attentionReasons(item, cutoffAt).length ? 1 : 0,
-              },
-              geometry: { type: 'Point' as const, coordinates: [...location.coordinates] },
-            },
-          ]
-        : []
-    }),
-  }
+interface SiteMarker {
+  id: string
+  element: HTMLDivElement
+  marker: Marker
 }
+
+const IBERIA: MapBounds = [
+  [-9.6, 35.7],
+  [4.5, 43.9],
+]
+const OVERVIEW_MAX_ZOOM = 7.5
+const SELECTION_MAX_ZOOM = 9
+const siteIcons = { site: Warehouse, port: Anchor, destination: Flag }
+
+const routeColor: ExpressionSpecification = [
+  'case',
+  ['==', ['get', 'state'], 'completed'],
+  '#97a3b6',
+  ['==', ['get', 'tone'], 'attention'],
+  '#a56a13',
+  ['==', ['get', 'tone'], 'unknown'],
+  '#8592a6',
+  '#4367df',
+]
+const routeWidth: ExpressionSpecification = [
+  'case',
+  ['get', 'selected'],
+  4.5,
+  ['==', ['get', 'state'], 'active'],
+  3,
+  2,
+]
+const routeOpacity: ExpressionSpecification = [
+  'case',
+  ['get', 'muted'],
+  0.2,
+  ['==', ['get', 'state'], 'pending'],
+  0.45,
+  ['==', ['get', 'state'], 'completed'],
+  0.8,
+  0.9,
+]
+const routeOrder: ExpressionSpecification = [
+  'case',
+  ['get', 'selected'],
+  2,
+  ['==', ['get', 'state'], 'active'],
+  1,
+  0,
+]
 
 function duration() {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 450
 }
 
-function fitOverview(map: LibreMap, shipments: Props['shipments'], cutoffAt: string) {
-  const bounds = new LngLatBounds()
-  mapRoutes(shipments, cutoffAt).features.forEach((feature) =>
-    feature.geometry.coordinates.forEach(([longitude, latitude]) =>
-      bounds.extend([longitude!, latitude!]),
-    ),
+function overviewBounds(
+  shipments: readonly ShipmentView[],
+  sites: readonly MapSite[],
+  cutoffAt: string,
+) {
+  return (
+    mapBounds(
+      shipments,
+      cutoffAt,
+      null,
+      sites.map((site) => site.coordinates),
+    ) ?? IBERIA
   )
-  shipments.forEach((item) => {
-    const location = confirmedLocation(item)
-    if (hasCoordinates(location)) bounds.extend([location.coordinates[0], location.coordinates[1]])
+}
+
+/** Width reserved on the right for the selected vehicle's label. */
+const SELECTED_LABEL_WIDTH = 110
+
+function fit(map: LibreMap, bounds: MapBounds, maxZoom: number, animate: boolean, labelRoom = 0) {
+  const { clientWidth, clientHeight } = map.getContainer()
+  const base = Math.max(24, Math.min(70, Math.round(Math.min(clientWidth, clientHeight) / 7)))
+  // Keep the label inside the map only when there is room for it beside the route.
+  const right = clientWidth > 2 * base + labelRoom + 120 ? base + labelRoom : base
+  map.fitBounds(bounds, {
+    padding: { top: base, bottom: base, left: base, right },
+    maxZoom,
+    duration: animate ? duration() : 0,
   })
-  if (bounds.isEmpty()) {
-    bounds.extend([-9.6, 35.7])
-    bounds.extend([4.5, 43.9])
-  }
-  map.fitBounds(bounds, { padding: 55, duration: 0, maxZoom: 7.5 })
+}
+
+/** Fits the selected shipment's full multimodal route, or the whole visible network. */
+function frame(
+  map: LibreMap,
+  {
+    shipments,
+    sites,
+    selected,
+    cutoffAt,
+  }: Pick<LogisticsMapProps, 'shipments' | 'sites' | 'selected' | 'cutoffAt'>,
+  animate: boolean,
+) {
+  const bounds = selected && mapBounds([selected], cutoffAt, selected.shipment.id)
+  if (bounds) fit(map, bounds, SELECTION_MAX_ZOOM, animate, SELECTED_LABEL_WIDTH)
+  else fit(map, overviewBounds(shipments, sites, cutoffAt), OVERVIEW_MAX_ZOOM, animate)
 }
 
 export default function LogisticsMap({
   shipments,
+  sites,
   selected,
+  selectedSiteId,
   cutoffAt,
   onSelect,
+  onSiteSelect,
   onClusterSelect,
-}: Props) {
+}: LogisticsMapProps) {
   const container = useRef<HTMLDivElement>(null)
   const mapRef = useRef<LibreMap | null>(null)
-  const markerRef = useRef<MapMarker[]>([])
-  const latest = useRef({ shipments, selected, cutoffAt })
+  const markerRef = useRef<ShipmentMarker[]>([])
+  const siteMarkerRef = useRef(new Map<string, SiteMarker>())
+  const latest = useRef({ shipments, sites, selected, cutoffAt })
   const [ready, setReady] = useState(false)
   const [failed, setFailed] = useState(false)
   const [baseUnavailable, setBaseUnavailable] = useState(false)
-  const [markers, setMarkers] = useState<MapMarker[]>([])
+  const [markers, setMarkers] = useState<ShipmentMarker[]>([])
+  const [siteMarkers, setSiteMarkers] = useState<SiteMarker[]>([])
+  const selectedId = selected?.shipment.id ?? null
 
   useEffect(() => {
-    latest.current = { shipments, selected, cutoffAt }
-  }, [shipments, selected, cutoffAt])
+    latest.current = { shipments, sites, selected, cutoffAt }
+  }, [shipments, sites, selected, cutoffAt])
 
   useEffect(() => {
     if (!container.current) return
@@ -107,6 +183,7 @@ export default function LogisticsMap({
     let disposed = false
     let signature = ''
     let exitFullscreen = () => {}
+    const siteMarkerMap = siteMarkerRef.current
     try {
       map = new LibreMap({
         container: container.current,
@@ -196,20 +273,11 @@ export default function LogisticsMap({
 
     const refreshMarkers = () => {
       if (disposed || !map.getSource('shipments')) return
-      const features = map
-        .querySourceFeatures('shipments')
-        .filter((feature) => feature.geometry.type === 'Point')
       const unique = new globalThis.Map<
         string,
-        {
-          coordinates: [number, number]
-          shipmentId?: string
-          clusterId?: number
-          count: number
-          attention: number
-        }
+        Pick<ShipmentMarker, 'coordinates' | 'shipmentId' | 'clusterId' | 'count' | 'attention'>
       >()
-      features.forEach((feature) => {
+      map.querySourceFeatures('shipments').forEach((feature) => {
         if (feature.geometry.type !== 'Point') return
         const properties = feature.properties
         const clusterId = properties.cluster ? Number(properties.cluster_id) : undefined
@@ -255,9 +323,10 @@ export default function LogisticsMap({
 
     map.on('load', () => {
       if (disposed) return
+      const initial = latest.current
       map.addSource('shipments', {
         type: 'geojson',
-        data: pointsFor(latest.current.shipments, latest.current.cutoffAt),
+        data: mapPoints(initial.shipments, initial.cutoffAt),
         cluster: true,
         clusterRadius: 48,
         clusterMaxZoom: 16,
@@ -270,59 +339,40 @@ export default function LogisticsMap({
         source: 'shipments',
         paint: { 'circle-radius': 1, 'circle-opacity': 0 },
       })
-      map.addSource('route', {
+      map.addSource('routes', {
         type: 'geojson',
-        data: mapRoutes(
-          latest.current.shipments,
-          latest.current.cutoffAt,
-          latest.current.selected?.shipment.id,
-        ),
+        data: mapRoutes(initial.shipments, initial.cutoffAt, initial.selected?.shipment.id),
       })
       map.addLayer({
-        id: 'route-outline',
+        id: 'route-casing',
         type: 'line',
-        source: 'route',
-        layout: { 'line-cap': 'round', 'line-join': 'round' },
-        paint: { 'line-color': '#ffffff', 'line-width': 7, 'line-opacity': 0.85 },
-      })
-      map.addLayer({
-        id: 'shipment-routes',
-        type: 'line',
-        source: 'route',
-        layout: { 'line-cap': 'round', 'line-join': 'round' },
+        source: 'routes',
+        layout: { 'line-cap': 'round', 'line-join': 'round', 'line-sort-key': routeOrder },
         paint: {
-          'line-color': ['match', ['get', 'tone'], 'attention', '#a56a13', '#4367df'],
-          'line-width': ['case', ['boolean', ['get', 'selected'], false], 4, 3],
-          'line-opacity': 0.7,
+          'line-color': '#ffffff',
+          'line-width': ['+', routeWidth, 3],
+          'line-opacity': ['case', ['get', 'muted'], 0.25, 0.8],
         },
       })
-      map.addLayer({
-        id: 'selected-route',
-        type: 'line',
-        source: 'route',
-        filter: ['==', ['get', 'selected'], true],
-        layout: { 'line-cap': 'round', 'line-join': 'round' },
-        paint: {
-          'line-color': ['match', ['get', 'tone'], 'attention', '#a56a13', '#4367df'],
-          'line-width': 4,
-        },
-      })
-      map.addSource('route-ends', {
-        type: 'geojson',
-        data: { type: 'FeatureCollection', features: [] },
-      })
-      map.addLayer({
-        id: 'route-ends',
-        type: 'circle',
-        source: 'route-ends',
-        paint: {
-          'circle-color': '#ffffff',
-          'circle-radius': 5,
-          'circle-stroke-color': ['match', ['get', 'tone'], 'attention', '#a56a13', '#4367df'],
-          'circle-stroke-width': 2,
-        },
-      })
-      fitOverview(map, latest.current.shipments, latest.current.cutoffAt)
+      for (const mode of ['road', 'sea'] as const) {
+        map.addLayer({
+          id: `routes-${mode}`,
+          type: 'line',
+          source: 'routes',
+          filter: ['==', ['get', 'mode'], mode],
+          layout: {
+            'line-cap': mode === 'sea' ? 'butt' : 'round',
+            'line-join': 'round',
+            'line-sort-key': routeOrder,
+          },
+          paint: {
+            'line-color': routeColor,
+            'line-width': routeWidth,
+            'line-opacity': routeOpacity,
+            ...(mode === 'sea' && { 'line-dasharray': [2, 1.5] }),
+          },
+        })
+      }
       setReady(true)
     })
     map.on('render', refreshMarkers)
@@ -339,11 +389,7 @@ export default function LogisticsMap({
     canvas.addEventListener('webglcontextlost', contextLost)
     const observer = new ResizeObserver(() => {
       map.resize()
-      fitOverview(
-        map,
-        latest.current.selected ? [latest.current.selected] : latest.current.shipments,
-        latest.current.cutoffAt,
-      )
+      frame(map, latest.current, false)
     })
     observer.observe(container.current)
     return () => {
@@ -353,53 +399,58 @@ export default function LogisticsMap({
       canvas.removeEventListener('webglcontextlost', contextLost)
       markerRef.current.forEach(({ marker }) => marker.remove())
       markerRef.current = []
+      siteMarkerMap.forEach(({ marker }) => marker.remove())
+      siteMarkerMap.clear()
       map.remove()
       mapRef.current = null
     }
   }, [])
 
   useEffect(() => {
-    const map = mapRef.current
-    if (!map || !ready) return
-    const source = map.getSource<GeoJSONSource>('shipments')
-    source?.setData(pointsFor(shipments, cutoffAt))
+    if (!ready) return
+    mapRef.current?.getSource<GeoJSONSource>('shipments')?.setData(mapPoints(shipments, cutoffAt))
   }, [shipments, cutoffAt, ready])
 
   useEffect(() => {
-    const map = mapRef.current
-    if (!map || !ready) return
-    const routes = mapRoutes(shipments, cutoffAt, selected?.shipment.id)
-    map.getSource<GeoJSONSource>('route')?.setData(routes)
-  }, [shipments, cutoffAt, selected, ready])
+    if (!ready) return
+    mapRef.current
+      ?.getSource<GeoJSONSource>('routes')
+      ?.setData(mapRoutes(shipments, cutoffAt, selectedId))
+  }, [shipments, cutoffAt, selectedId, ready])
 
   useEffect(() => {
     const map = mapRef.current
     if (!map || !ready) return
-    const route = mapRoutes(selected ? [selected] : [], cutoffAt, selected?.shipment.id)
-    const ends: FeatureCollection<Point> = {
-      type: 'FeatureCollection',
-      features: route.features.flatMap((feature) =>
-        [feature.geometry.coordinates[0]!, feature.geometry.coordinates.at(-1)!].map(
-          (coordinates) => ({
-            type: 'Feature' as const,
-            properties: { tone: feature.properties?.tone },
-            geometry: { type: 'Point' as const, coordinates },
-          }),
-        ),
-      ),
+    const existing = siteMarkerRef.current
+    const next = new Map<string, SiteMarker>()
+    for (const site of sites) {
+      const coordinates: [number, number] = [site.coordinates[0], site.coordinates[1]]
+      const previous = existing.get(site.id)
+      if (previous) {
+        previous.marker.setLngLat(coordinates)
+        next.set(site.id, previous)
+        existing.delete(site.id)
+        continue
+      }
+      const element = document.createElement('div')
+      element.className = 'map-site-host'
+      const marker = new Marker({ element, anchor: 'bottom' }).setLngLat(coordinates).addTo(map)
+      next.set(site.id, { id: site.id, element, marker })
     }
-    map.getSource<GeoJSONSource>('route-ends')?.setData(ends)
-    const coordinates = route.features.flatMap((feature) => feature.geometry.coordinates)
-    const location = selected ? confirmedLocation(selected) : undefined
-    if (hasCoordinates(location)) coordinates.push([...location.coordinates])
-    if (coordinates.length) {
-      const bounds = new LngLatBounds()
-      coordinates.forEach((coordinate) => bounds.extend(coordinate as [number, number]))
-      map.fitBounds(bounds, { padding: 70, maxZoom: 7.5, duration: duration() })
-    } else fitOverview(map, shipments, cutoffAt)
-  }, [selected, ready, shipments, cutoffAt])
+    existing.forEach(({ marker }) => marker.remove())
+    siteMarkerRef.current = next
+    // Marker hosts are created by MapLibre outside React; the portals need them as state.
+    // oxlint-disable-next-line react/set-state-in-effect
+    setSiteMarkers([...next.values()])
+  }, [sites, ready])
 
-  async function expandCluster(marker: MapMarker) {
+  // Frame once per selection change, not on every data refresh, so the user's camera is kept.
+  useEffect(() => {
+    const map = mapRef.current
+    if (map && ready) frame(map, latest.current, selectedId !== null)
+  }, [selectedId, ready])
+
+  async function expandCluster(marker: ShipmentMarker) {
     const map = mapRef.current
     const source = map?.getSource<GeoJSONSource>('shipments')
     if (!map || !source || marker.clusterId === undefined) return
@@ -421,15 +472,13 @@ export default function LogisticsMap({
       <div
         ref={container}
         className="logistics-map"
-        aria-label="Mapa de últimas ubicaciones confirmadas de los envíos"
+        aria-label="Mapa de rutas, centros y últimas ubicaciones confirmadas"
       />
       {failed ? (
         <output className="map-unavailable">
-          <MapPinFallback />
+          <LocateFixed size={26} aria-hidden="true" />
           <strong>El mapa no está disponible</strong>
-          <span>
-            Puedes consultar las ubicaciones y seleccionar los envíos en la lista inferior.
-          </span>
+          <span>Puedes consultar y seleccionar los envíos en la lista inferior.</span>
         </output>
       ) : (
         <>
@@ -455,7 +504,13 @@ export default function LogisticsMap({
               aria-label="Ver toda la operación"
               disabled={!ready}
               onClick={() => {
-                if (mapRef.current) fitOverview(mapRef.current, shipments, cutoffAt)
+                if (mapRef.current)
+                  fit(
+                    mapRef.current,
+                    overviewBounds(shipments, sites, cutoffAt),
+                    OVERVIEW_MAX_ZOOM,
+                    true,
+                  )
               }}
             >
               <LocateFixed size={17} />
@@ -468,6 +523,31 @@ export default function LogisticsMap({
           )}
         </>
       )}
+      {!failed &&
+        siteMarkers.map(({ id, element }) => {
+          const site = sites.find((entry) => entry.id === id)
+          if (!site) return null
+          const Icon = siteIcons[site.kind]
+          const pressed = site.id === selectedSiteId
+          return createPortal(
+            <button
+              type="button"
+              className="map-site"
+              data-kind={site.kind}
+              aria-pressed={pressed}
+              aria-label={`Filtrar envíos por ${site.name}`}
+              title={`${siteKindLabels[site.kind]} · ${site.name}`}
+              onClick={() => onSiteSelect(pressed ? null : site.id)}
+            >
+              <span className="map-site-badge" aria-hidden="true">
+                <Icon size={12} />
+              </span>
+              {pressed && <span className="map-site-label">{site.name}</span>}
+            </button>,
+            element,
+            `site-${id}`,
+          )
+        })}
       {!failed &&
         markers.map((marker) => {
           if (marker.clusterId !== undefined)
@@ -488,23 +568,28 @@ export default function LogisticsMap({
           const item = shipments.find((entry) => entry.shipment.id === marker.shipmentId)
           if (!item) return null
           const location = confirmedLocation(item)
+          const isSelected = item.shipment.id === selectedId
+          const needsAttention = attentionReasons(item, cutoffAt).length > 0
+          const Icon = currentLeg(item)?.mode === 'sea' ? Ship : Truck
           return createPortal(
             <button
               type="button"
               className="map-vehicle"
               data-tone={mapTone(item, cutoffAt)}
-              aria-pressed={selected?.shipment.id === item.shipment.id}
-              aria-label={`Seleccionar ${item.shipment.reference}, ${attentionReasons(item, cutoffAt).length ? 'requiere atención' : 'en curso'}, última ubicación ${location?.placeLabel ?? 'desconocida'}`}
+              aria-pressed={isSelected}
+              aria-label={`Seleccionar ${item.shipment.reference}, ${needsAttention ? 'requiere atención' : 'en curso'}, última ubicación ${location?.placeLabel ?? 'desconocida'}`}
               title={`${item.shipment.reference} · ${location?.placeLabel ?? 'Sin ubicación confirmada'}`}
               onClick={() => onSelect(item.shipment.id)}
             >
-              <span className="map-vehicle-dot" aria-hidden="true" />
-              {selected?.shipment.id === item.shipment.id && (
+              <span className="map-vehicle-dot" aria-hidden="true">
+                <Icon size={12} strokeWidth={2.4} />
+              </span>
+              {isSelected && (
                 <span className="map-vehicle-label">
                   <strong>{item.shipment.reference}</strong>
                   <small>
                     {location?.placeLabel} ·{' '}
-                    {attentionReasons(item, cutoffAt).length
+                    {needsAttention
                       ? 'Revisar'
                       : item.projection.currentStage
                         ? stageLabels[item.projection.currentStage]
@@ -519,8 +604,4 @@ export default function LogisticsMap({
         })}
     </>
   )
-}
-
-function MapPinFallback() {
-  return <LocateFixed size={26} aria-hidden="true" />
 }

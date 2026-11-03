@@ -6,7 +6,9 @@ El alcance completo y el reparto del trabajo están en [IMPLEMENTATION_PLAN.md](
 
 ## Estado actual
 
-Fases 0 y 1 completadas. El primer recorrido incluye un envío nacional Madrid → Valencia, un selector de dos identidades, listado y detalle conectados con el mapa de ubicaciones confirmadas, y un evento reproducible de entrega.
+Fases 0, 1 y 2 completadas. La fase 2 incorpora 174 envíos sintéticos (24 activos), cinco escenarios multimodales, incidencias, documentos, vistas de cliente y la estructura del reporte; el detalle está en `IMPLEMENTATION_PLAN.md`. Las pruebas del recorrido de la fase 1 usan `nationalSeed`.
+
+Fase 1: El primer recorrido incluye un envío nacional Madrid → Valencia, un selector de dos identidades, listado y detalle conectados con el mapa de ubicaciones confirmadas, y un evento reproducible de entrega.
 
 Las vistas tienen un título compacto en la barra superior. La sidebar se puede colapsar desde un control exterior y el logotipo SVG de Atlas se utiliza también como favicon. Los breadcrumbs se incorporarán en páginas con jerarquía, como el detalle de un envío.
 
@@ -150,4 +152,4 @@ La cartografía detallada utiliza las teselas públicas de OpenStreetMap, con at
 
 El trazado Madrid → Valencia de `src/data/scenarios/routes/madrid-valencia.json` se obtuvo del [servicio de rutas OSRM](https://project-osrm.org/docs/v26.6.1/http) sobre OpenStreetMap, con geometría completa y simplificación de unos 35 metros para reducir el tamaño. Se guarda en el proyecto para evitar peticiones a un servicio público al abrir la aplicación. La ruta conserva el punto de Perales de Tajuña. Es un itinerario de referencia por carretera, no una ruta certificada para camiones ni un recorrido GPS observado.
 
-Cada `ShipmentLeg.route` admite coordenadas de un trazado y su fuente. En carretera deben proceder de un motor de rutas; en mar, de un itinerario marítimo del operador que respete costas y pasos navegables. El mapa dibuja esas coordenadas sin conectar centros mediante rectas. Si un tramo no tiene geometría válida, conserva el marcador y el acceso al detalle, sin inventar un trazado. El escenario actual contiene un único envío por carretera; no incluye todavía un caso marítimo. El seguimiento GPS en directo requiere integrar una fuente de posiciones del transportista.
+Cada `ShipmentLeg.route` admite coordenadas de un trazado y su fuente. En carretera deben proceder de un motor de rutas; en mar, de un itinerario marítimo del operador que respete costas y pasos navegables. El mapa dibuja esas coordenadas sin conectar centros mediante rectas. Si un tramo no tiene geometría válida, conserva el marcador y el acceso al detalle, sin inventar un trazado. Los tramos marítimos usan itinerarios sintéticos del operador que evitan costas y pasan por el estrecho de Gibraltar. El seguimiento GPS en directo requiere integrar una fuente de posiciones del transportista.

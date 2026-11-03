@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { App } from '@/app/app'
 import { useWorkspaceStore } from '@/store/workspace-store'
 import { nationalDataset } from '@/data/scenarios/national'
+import { nationalSeed } from '@/data/scenarios'
 
 // The map renderer is checked in the browser; the real overview handles selection and permissions.
 vi.mock(
@@ -37,6 +38,8 @@ const mount = async () => {
 
 beforeEach(() => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true })
+  // Phase 1 walkthrough runs on the single-shipment seed; the full dataset has its own tests.
+  useWorkspaceStore.setState({ seed: nationalSeed })
   useWorkspaceStore.getState().setIdentity('operations-madrid')
   useWorkspaceStore.getState().resetDemo()
   window.history.replaceState(null, '', '/')
@@ -111,7 +114,7 @@ describe('primer recorrido de Atlas', () => {
     await act(async () => container.querySelector<HTMLAnchorElement>('.shipment-row')!.click())
     expect(container.querySelector('#detail-title')?.textContent).toBe('ATL-ES-001')
     expect(container.querySelector('.shipment-row')).toBeNull()
-    await click('Confirmar entrega')
+    await click('Siguiente evento')
     expect(container.querySelector('.detail-status')?.textContent).toContain('Entregado')
     expect(container.querySelector('.detail-facts')?.textContent).toContain('Almacén Valencia')
     const timeline = container.querySelectorAll('.event-list li')
@@ -119,11 +122,11 @@ describe('primer recorrido de Atlas', () => {
     expect(timeline[0]?.textContent).toContain('DELIVERED')
     expect(timeline[1]?.textContent).toContain('ON_ROUTE')
     expect(timeline[2]?.textContent).toContain('PICKED_UP')
-    expect(button('Confirmar entrega').disabled).toBe(true)
+    expect(button('Siguiente evento').disabled).toBe(true)
     await click('Volver a envíos')
     expect(container.querySelector('.shipment-row')?.textContent).toContain('Entregado')
     await click('Vista general')
-    expect(container.textContent).toContain('Sin envíos en curso')
+    expect(container.textContent).toContain('Sin envíos pendientes de entrega')
     expect(container.querySelector('.map-shipment-count')?.textContent).toBe('0')
     expect(container.querySelector('[data-testid="map"]')?.children).toHaveLength(0)
     expect(container.querySelector('.map-shipment-row')).toBeNull()
@@ -147,7 +150,7 @@ describe('primer recorrido de Atlas', () => {
     expect(container.textContent).not.toContain('ATL-ES-001')
     expect(container.textContent).not.toContain('Norte Hogar')
     expect(container.querySelector('#detail-title')).toBeNull()
-    expect(container.querySelector('[data-testid="map"]')?.children).toHaveLength(0)
+    expect(container.querySelector('[data-testid="map"]')).toBeNull()
     expect(window.location.search).toBe('')
     await act(async () => {
       window.history.pushState(null, '', '?shipment=shipment-es-001')

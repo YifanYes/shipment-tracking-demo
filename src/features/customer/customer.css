@@ -1,0 +1,135 @@
+.customer-home {
+  display: grid;
+  gap: 28px;
+  min-width: 0;
+}
+.customer-section {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+.customer-section > h2 {
+  font-size: 15px;
+}
+.customer-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+  gap: 12px;
+}
+.customer-recent {
+  display: grid;
+  gap: 10px;
+}
+.customer-card {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  height: 100%;
+  padding: 18px;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  min-width: 0;
+}
+.customer-card[data-late='true'] {
+  border-left: 3px solid #e0a34a;
+}
+.customer-card-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 10px;
+}
+.customer-card-heading > div {
+  min-width: 0;
+}
+.customer-card-heading h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #344862;
+}
+.customer-card-heading p {
+  margin-top: 4px;
+  font-size: 11px;
+  color: #67768c;
+  overflow-wrap: anywhere;
+}
+.customer-status {
+  justify-self: start;
+}
+.customer-dates {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+}
+.customer-dates dt {
+  font-size: 10px;
+  color: #75849a;
+}
+.customer-dates dd {
+  margin-top: 3px;
+  font-size: 13px;
+  font-weight: 550;
+  color: #344862;
+}
+.customer-note {
+  font-size: 11px;
+  color: #67768c;
+  line-height: 1.6;
+}
+.customer-delay {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  background: #fffaf2;
+  border-radius: 8px;
+  font-size: 11px;
+  line-height: 1.6;
+  color: #8a5410;
+}
+.customer-delay ul {
+  padding-left: 14px;
+  list-style: disc;
+}
+.customer-delivered {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 11px;
+  color: #286650;
+}
+.customer-delivered > span {
+  color: #67768c;
+}
+.customer-card[data-late='true'] .customer-delivered > span {
+  color: #a46512;
+}
+.customer-documents {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  font-size: 11px;
+}
+.customer-documents a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--primary);
+  overflow-wrap: anywhere;
+}
+.customer-documents a:hover {
+  text-decoration: underline;
+}
+.customer-documents [data-state='missing'] {
+  color: #8a5410;
+}
+.customer-empty {
+  padding: 32px 16px;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: #67768c;
+  font-size: 13px;
+  text-align: center;
+}

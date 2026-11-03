@@ -35,7 +35,13 @@ describe('ubicaciones y estado del mapa', () => {
     const route = mapRoutes([item], cutoffAt).features[0]!
     expect(route.geometry.coordinates.length).toBeGreaterThan(100)
     expect(route.geometry.coordinates).toEqual(item.shipment.legs[0]?.route?.coordinates)
-    expect(route.properties).toMatchObject({ selected: false, tone: 'transit', mode: 'road' })
+    expect(route.properties).toMatchObject({
+      selected: false,
+      muted: false,
+      tone: 'transit',
+      mode: 'road',
+      state: 'active',
+    })
     expect(mapRoutes([item], cutoffAt, item.shipment.id).features[0]?.properties?.selected).toBe(
       true,
     )

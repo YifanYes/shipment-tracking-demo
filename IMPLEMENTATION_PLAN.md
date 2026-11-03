@@ -310,7 +310,7 @@ La prioridad es demostrar seguimiento multimodal, confianza en la información, 
 - [x] Plan guardado en la raíz.
 - [x] Fase 0 completada.
 - [x] Fase 1 completada.
-- [ ] Fase 2 completada.
+- [x] Fase 2 completada.
 - [ ] Fase 3 completada.
 - [ ] Fase 4 completada.
 - [ ] Fase 5 completada.
@@ -427,3 +427,28 @@ Revisada el 2 de noviembre de 2026. Las fases 0 y 1 siguen completadas con el ma
 | Navegador              | Build de producción revisado en escritorio (1280 × 800) y móvil (390 × 844): sin desbordamiento horizontal, sin errores de consola, teselas cargadas    |
 
 Pendientes que no bloquean estas fases: el aviso de tamaño del fragmento de MapLibre (unos 1,08 MB sin comprimir), el uso de las teselas públicas de OpenStreetMap antes de publicar y la comprobación completa sin WebGL en la fase 4.
+
+## Resultado de la fase 2
+
+Completada el 3 de noviembre de 2026. El agente principal fijó los contratos y tres subagentes trabajaron en paralelo sobre archivos disjuntos: dominio, mapa e interfaz. Una interrupción por límite de uso detuvo a los tres a mitad de tarea; se reanudaron con su contexto y terminaron sus entregas.
+
+| Responsable | Entrega                                                                                                                                                                                                                                                                       |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Principal   | `DemoSeed`, `legStages`, `ShipmentView.incidents`, `ReportMetric.group`; store con semilla y avance al siguiente evento programado (`simulation/clock.ts`); navegación por rol; componentes shadcn/ui input, select, dialog, tabs, table y checkbox; integración en `app.tsx` |
+| Dominio     | 174 envíos (24 activos y 150 históricos de 90 días), 1.270 eventos, 28 documentos, cinco identidades, cuatro operadores con vocabularios propios, cinco escenarios, incidencias, umbrales de antigüedad por contexto y métricas del reporte                                   |
+| Mapa        | Centros, puertos y destinos del perímetro, tramos por carretera y mar con su estado, filtro por centro, encuadre multimodal y ficha con ETA, compromiso e incidencias                                                                                                         |
+| Interfaz    | Listado con búsqueda y filtros, detalle multimodal con incidencias, documentos y eventos por audiencia, inicio del cliente y estructura del reporte con detección de reporte desactualizado                                                                                   |
+
+Verificación de cierre:
+
+| Criterio     | Resultado                                                                                                                      |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| Calidad      | `pnpm check`, `pnpm test` (21 archivos, 103 pruebas) y `pnpm build` correctos                                                  |
+| Mismo modelo | Marcadores, contador del mapa, métricas y bandeja de atención coinciden con `selectVisibleShipments` sobre el dataset completo |
+| Perímetro    | El cliente solo ve su cuenta, sin mapa ni análisis; un enlace directo ajeno se rechaza                                         |
+| Aduana       | ATL-TR-004 permanece en aduana hasta `CUSTOMS_RELEASED` al avanzar el reloj                                                    |
+| Fase 1       | El recorrido nacional se conserva sobre `nationalSeed`                                                                         |
+
+Revisión en navegador del 3 de noviembre de 2026 sobre el build de producción, a 1280 × 800 y 390 × 844, sin errores de consola ni desbordamiento horizontal: mapa con dataset completo, selección y ficha de ATL-TR-004, detalle con incidencias, documentos y eventos, búsqueda del listado, inicio y detalle del cliente sin códigos internos, enlace ajeno rechazado, Análisis oculto al cliente, reporte generado, recorrido de los 20 eventos programados y reinicio. Correcciones aplicadas: el cierre de un tramo intermedio se mostraba como "Entregado"; filas del listado alineadas en columnas y con el tipo de incidencia en lugar de "Incidencia pendiente"; filtros en una línea; filtros del reporte con una sola opción ocultos; botón del cliente junto al título; etiqueta del vehículo seleccionado dentro del mapa; el mapa se titula "Envíos sin entregar" porque incluye planificados.
+
+Pendientes para las fases siguientes: al recorrer todos los eventos programados (unas 43 h), los envíos activos sin escenario dejan de recibir eventos y pasan a información antigua y fuera de plazo, de modo que la bandeja de atención crece hasta 22; el reloj completo de la fase 3 debe añadirles eventos o limitar el avance. La métrica de tránsito por cada 100 km compara operadores de carretera y mar en el mismo grupo. el dataset se incluye en el fragmento principal, de unos 550 kB sin comprimir; el tramo Algeciras → Tanger Med cruza unos kilómetros del contorno simplificado de `map-land.geojson`; la liberación aduanera reutiliza el hito `collected`; los filtros del listado se reinician al volver del detalle; las acciones, avisos, hallazgos del reporte, reloj completo y persistencia pertenecen a la fase 3.

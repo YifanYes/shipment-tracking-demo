@@ -179,6 +179,8 @@ export interface ShipmentProjection {
     confirmedAt: IsoDateTime
     evidence: EvidenceReference
   } | null
+  /** Highest confirmed milestone of every leg, keyed by leg ID. Never moves backwards. */
+  legStages: Readonly<Record<EntityId, LegStage>>
   incidentIds: readonly EntityId[]
   unknownEventIds: readonly EntityId[]
 }
@@ -194,6 +196,8 @@ export interface ShipmentView {
   operators: readonly Operator[]
   documents: readonly ShipmentDocument[]
   locations: readonly LogisticsLocation[]
+  /** Active and cleared incidents derived from the visible events and documents. */
+  incidents: readonly ShipmentIncident[]
 }
 
 export interface ShipmentSummary {
@@ -241,8 +245,12 @@ export interface AnalyticsFilters {
   operatorIds: readonly EntityId[]
 }
 
+export type ReportMetricGroup = 'delays' | 'legs' | 'ports' | 'customs' | 'sites' | 'operators'
+
 export interface ReportMetric {
   id: EntityId
+  /** Section of the report the metric belongs to. */
+  group: ReportMetricGroup
   label: string
   definition: string
   unit: 'hours' | 'percent' | 'shipments'
@@ -298,4 +306,10 @@ export interface DemoScenario {
   name: string
   shipmentIds: readonly EntityId[]
   scheduledEvents: readonly ScheduledEvent[]
+}
+
+/** Initial state of the demo: facts already received plus the events the clock will release. */
+export interface DemoSeed {
+  dataset: DemoDataset
+  scenarios: readonly DemoScenario[]
 }

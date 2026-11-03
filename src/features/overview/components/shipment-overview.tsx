@@ -1,22 +1,48 @@
-import { lazy, Suspense, useState } from 'react'
+import { lazy, Suspense, useMemo, useState } from 'react'
 import {
+  Anchor,
   AlertTriangle,
   ArrowRight,
   Check,
   ChevronRight,
-  LocateFixed,
+  Flag,
   Package,
   Ship,
   ShieldCheck,
   Truck,
+  Warehouse,
   X,
 } from 'lucide-react'
 import type { ShipmentView } from '@/domain/contracts'
-import { attentionReasons } from '@/domain/attention'
 import { formatTime, stageLabels, updateAge } from '@/shared/lib/format'
-import { confirmedLocation, hasCoordinates, mapTone } from '../lib/map-data'
+import {
+  activeIncidents,
+  attentionLines,
+  attentionQueue,
+  severityLabels,
+  incidentKindLabels,
+} from '../lib/attention'
+import {
+  type LegState,
+  confirmedLocation,
+  currentLeg,
+  hasCoordinates,
+  legRoute,
+  legState,
+  mapTone,
+  sortedLegs,
+} from '../lib/map-data'
+import { networkSites, shipmentsAtSite, siteKindLabels } from '../lib/network'
 
 const LogisticsMap = lazy(() => import('./logistics-map'))
+
+const modeLabels = { road: 'Carretera', sea: 'Marítimo' }
+const legStateLabels: Record<LegState, string> = {
+  completed: 'completado',
+  active: 'en curso',
+  pending: 'pendiente',
+}
+const siteIcons = { site: Warehouse, port: Anchor, destination: Flag }
 
 interface Props {
   shipments: readonly ShipmentView[]
@@ -27,12 +53,30 @@ interface Props {
 export function ShipmentOverview({ shipments, cutoffAt, onOpenShipment }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [clusterIds, setClusterIds] = useState<string[] | null>(null)
-  const visible = shipments.filter((item) => item.projection.lifecycle !== 'delivered')
+  const [siteId, setSiteId] = useState<string | null>(null)
+  const visible = useMemo(
+    () => shipments.filter((item) => item.projection.lifecycle !== 'delivered'),
+    [shipments],
+  )
+  const sites = useMemo(() => networkSites(visible), [visible])
+  const attention = useMemo(() => attentionQueue(shipments, cutoffAt), [shipments, cutoffAt])
   const selected = visible.find((item) => item.shipment.id === selectedId) ?? null
-  const attention = shipments.filter((item) => attentionReasons(item, cutoffAt).length)
+  const site = sites.find((entry) => entry.id === siteId) ?? null
   const list = clusterIds
     ? visible.filter((item) => clusterIds.includes(item.shipment.id))
-    : visible
+    : site
+      ? shipmentsAtSite(visible, site.id)
+      : visible
+  const modes = new Set(
+    visible.flatMap((item) => item.shipment.legs.filter(legRoute).map((leg) => leg.mode)),
+  )
+  const hasCompletedLeg = visible.some(
+    (item) =>
+      item.projection.lifecycle === 'active' &&
+      item.shipment.legs.some((leg) => legState(item, leg) === 'completed' && legRoute(leg)),
+  )
+  const siteKinds = new Set(sites.map((entry) => entry.kind))
+
   const focusShipment = (id: string) => {
     const item = shipments.find((entry) => entry.shipment.id === id)
     if (!item) return
@@ -42,13 +86,26 @@ export function ShipmentOverview({ shipments, cutoffAt, onOpenShipment }: Props)
     }
     setSelectedId(id)
     setClusterIds(null)
+    if (site && !site.shipmentIds.includes(id)) setSiteId(null)
+  }
+  const selectSite = (id: string | null) => {
+    setSiteId(id)
+    setClusterIds(null)
+  }
+  const selectCluster = (ids: string[]) => {
+    setClusterIds(ids)
+    setSiteId(null)
+  }
+  const clearFilter = () => {
+    setClusterIds(null)
+    setSiteId(null)
   }
 
   return (
     <div className="overview-grid">
       <section className="network-panel" aria-labelledby="network-title">
         <div className="panel-heading map-heading">
-          <h2 id="network-title">Envíos en curso</h2>
+          <h2 id="network-title">Envíos sin entregar</h2>
           <span className="map-shipment-count">{visible.length}</span>
         </div>
         <div className="map-surface">
@@ -56,10 +113,13 @@ export function ShipmentOverview({ shipments, cutoffAt, onOpenShipment }: Props)
             <Suspense fallback={<output className="map-loading">Cargando mapa…</output>}>
               <LogisticsMap
                 shipments={visible}
+                sites={sites}
                 selected={selected}
+                selectedSiteId={site?.id ?? null}
                 cutoffAt={cutoffAt}
                 onSelect={focusShipment}
-                onClusterSelect={setClusterIds}
+                onSiteSelect={selectSite}
+                onClusterSelect={selectCluster}
               />
             </Suspense>
             {!visible.length && (
@@ -67,23 +127,50 @@ export function ShipmentOverview({ shipments, cutoffAt, onOpenShipment }: Props)
                 <span className="map-empty-icon">
                   {shipments.length ? <Check size={23} /> : <Package size={23} />}
                 </span>
-                <strong>{shipments.length ? 'Sin envíos en curso' : 'Sin envíos asignados'}</strong>
+                <strong>
+                  {shipments.length ? 'Sin envíos pendientes de entrega' : 'Sin envíos asignados'}
+                </strong>
               </div>
             )}
           </div>
-          <div className="map-legend">
-            <span>
-              <i data-tone="transit" /> En curso
-            </span>
-            <span>
-              <i data-tone="attention" /> Atención
-            </span>
-            {visible.some((item) => mapTone(item, cutoffAt) === 'unknown') && (
+          {visible.length > 0 && (
+            <div className="map-legend">
               <span>
-                <i data-tone="unknown" /> Pendiente de salida
+                <i data-tone="transit" /> En curso
               </span>
-            )}
-          </div>
+              <span>
+                <i data-tone="attention" /> Atención
+              </span>
+              {visible.some((item) => mapTone(item, cutoffAt) === 'unknown') && (
+                <span>
+                  <i data-tone="unknown" /> Pendiente de salida
+                </span>
+              )}
+              {[...modes].sort().map((mode) => (
+                <span key={mode}>
+                  <i className="legend-line" data-mode={mode} /> {modeLabels[mode]}
+                </span>
+              ))}
+              {hasCompletedLeg && (
+                <span>
+                  <i className="legend-line" data-state="completed" /> Tramo completado
+                </span>
+              )}
+              {(['site', 'port', 'destination'] as const)
+                .filter((kind) => siteKinds.has(kind))
+                .map((kind) => {
+                  const Icon = siteIcons[kind]
+                  return (
+                    <span key={kind}>
+                      <i className="legend-site" data-kind={kind}>
+                        <Icon size={9} aria-hidden="true" />
+                      </i>{' '}
+                      {siteKindLabels[kind]}
+                    </span>
+                  )
+                })}
+            </div>
+          )}
         </div>
 
         {selected && (
@@ -97,20 +184,19 @@ export function ShipmentOverview({ shipments, cutoffAt, onOpenShipment }: Props)
 
         {list.length > 0 && (
           <div className="map-shipment-list" aria-label="Envíos del mapa">
-            {clusterIds && (
+            {(clusterIds || site) && (
               <div className="map-list-heading">
-                <span>{list.length} envíos en esta zona</span>
-                <button type="button" onClick={() => setClusterIds(null)}>
+                <span>
+                  {site ? `${siteKindLabels[site.kind]} · ${site.name}` : 'Zona del mapa'}
+                </span>
+                <button type="button" onClick={clearFilter}>
                   Ver todos
                 </button>
               </div>
             )}
             {list.map((item) => {
               const location = confirmedLocation(item)
-              const mode = item.shipment.legs.find(
-                (leg) => leg.id === item.projection.currentLegId,
-              )?.mode
-              const Icon = mode === 'sea' ? Ship : Truck
+              const Icon = currentLeg(item)?.mode === 'sea' ? Ship : Truck
               return (
                 <button
                   key={item.shipment.id}
@@ -148,60 +234,52 @@ export function ShipmentOverview({ shipments, cutoffAt, onOpenShipment }: Props)
 
       <section className="attention-panel" aria-labelledby="attention-title">
         <div className="panel-heading">
-          <div>
-            <h2 id="attention-title">Necesita tu atención</h2>
-            <p>Lo que conviene revisar primero</p>
-          </div>
+          <h2 id="attention-title">Necesita tu atención</h2>
           <span className="attention-count">{attention.length}</span>
         </div>
         {attention.length ? (
           <div className="attention-list">
-            {attention.map((item) => (
-              <button
-                type="button"
-                key={item.shipment.id}
-                className="attention-item"
-                aria-pressed={selected?.shipment.id === item.shipment.id}
-                onClick={() => focusShipment(item.shipment.id)}
-              >
-                <span className="attention-item-heading">
-                  <strong>{item.shipment.reference}</strong>
-                  <AlertTriangle size={15} aria-hidden="true" />
-                </span>
-                <span>
-                  {item.origin?.placeLabel} → {item.destination?.placeLabel}
-                </span>
-                <ul>
-                  {attentionReasons(item, cutoffAt).map((reason) => (
-                    <li key={reason}>{reason}</li>
-                  ))}
-                </ul>
-                <span className="attention-item-action">
-                  Localizar envío <ArrowRight size={13} aria-hidden="true" />
-                </span>
-              </button>
-            ))}
+            {attention.map((item) => {
+              const lines = attentionLines(item, cutoffAt)
+              return (
+                <button
+                  type="button"
+                  key={item.shipment.id}
+                  className="attention-item"
+                  data-severity={lines[0]?.severity}
+                  aria-pressed={selected?.shipment.id === item.shipment.id}
+                  onClick={() => focusShipment(item.shipment.id)}
+                >
+                  <span className="attention-item-heading">
+                    <strong>{item.shipment.reference}</strong>
+                    <AlertTriangle size={15} aria-hidden="true" />
+                  </span>
+                  <span>
+                    {item.origin?.placeLabel} → {item.destination?.placeLabel}
+                  </span>
+                  <ul>
+                    {lines.map((line) => (
+                      <li key={line.key} data-severity={line.severity}>
+                        {line.label}
+                        {line.severity && ` · ${severityLabels[line.severity]}`}
+                      </li>
+                    ))}
+                  </ul>
+                  <span className="attention-item-action">
+                    Localizar envío <ArrowRight size={13} aria-hidden="true" />
+                  </span>
+                </button>
+              )
+            })}
           </div>
         ) : (
           <div className="empty-attention">
             <div className="empty-icon">
               <ShieldCheck size={28} />
             </div>
-            <h3>{shipments.length ? 'Todo va según lo previsto' : 'Sin envíos asignados'}</h3>
-            <p>
-              {shipments.length
-                ? 'No hay incidencias ni información pendiente de revisar en tu cartera.'
-                : 'Esta cuenta todavía no tiene envíos.'}
-            </p>
+            <h3>{shipments.length ? 'Nada pendiente de revisar' : 'Sin envíos asignados'}</h3>
           </div>
         )}
-        <div className="map-attention-note">
-          <LocateFixed size={17} aria-hidden="true" />
-          <p>
-            Selecciona un envío para consultar su recorrido, llegada prevista y última
-            actualización.
-          </p>
-        </div>
       </section>
     </div>
   )
@@ -219,8 +297,18 @@ function SelectedShipment({
   onClose: () => void
 }) {
   const location = confirmedLocation(item)
+  const confirmed = item.projection.lastConfirmedLocation
   const delivered = item.projection.lifecycle === 'delivered'
   const eta = item.projection.eta
+  const incidents = activeIncidents(item)
+  const placeOf = (id: string) => item.locations.find((entry) => entry.id === id)?.placeLabel
+  const operatorName = (id: string | undefined) =>
+    item.operators.find((operator) => operator.id === id)?.name
+  const source =
+    confirmed?.evidence.kind === 'operator_event'
+      ? operatorName(item.events.find((event) => event.id === confirmed.evidence.id)?.operatorId)
+      : undefined
+  const legs = sortedLegs(item)
   return (
     <section className="map-selected" aria-label={`Resumen de ${item.shipment.reference}`}>
       <div className="map-selected-heading">
@@ -234,62 +322,78 @@ function SelectedShipment({
           <X size={15} />
         </button>
       </div>
-      <p className="map-selected-route">
-        {item.shipment.legs
-          .slice()
-          .sort((a, b) => a.sequence - b.sequence)
-          .map((leg, index) => (
-            <span key={leg.id}>
-              {index === 0 && (
-                <>
-                  {item.locations.find((entry) => entry.id === leg.originLocationId)?.placeLabel ??
-                    'Origen'}{' '}
-                  <ArrowRight size={12} aria-hidden="true" />{' '}
-                </>
-              )}
-              {leg.mode === 'sea' ? (
-                <Ship size={14} aria-label="Marítimo" />
-              ) : (
-                <Truck size={14} aria-label="Carretera" />
-              )}{' '}
-              {item.locations.find((entry) => entry.id === leg.destinationLocationId)?.placeLabel ??
-                'Destino'}
-              {index < item.shipment.legs.length - 1 && <ArrowRight size={12} aria-hidden="true" />}
-            </span>
-          ))}
-      </p>
+      <ol className="map-selected-route" aria-label="Recorrido">
+        <li>{placeOf(legs[0]?.originLocationId ?? '') ?? item.origin?.placeLabel ?? 'Origen'}</li>
+        {legs.map((leg) => {
+          const state = legState(item, leg)
+          const Icon = leg.mode === 'sea' ? Ship : Truck
+          return (
+            <li key={leg.id} data-state={state}>
+              <span className="map-leg-mode" aria-hidden="true">
+                <Icon size={13} />
+              </span>
+              <span className="sr-only">
+                {modeLabels[leg.mode]}, {legStateLabels[state]}:{' '}
+              </span>
+              {placeOf(leg.destinationLocationId) ?? 'Destino'}
+            </li>
+          )
+        })}
+      </ol>
       <dl className="map-selected-facts">
         <div>
           <dt>Última ubicación confirmada</dt>
           <dd>{location?.name ?? 'Sin ubicación confirmada'}</dd>
-          <small>{updateAge(item.projection.lastConfirmedLocation?.confirmedAt, cutoffAt)}</small>
-          {item.projection.lastConfirmedLocation && (
-            <time dateTime={item.projection.lastConfirmedLocation.confirmedAt}>
-              {formatTime(item.projection.lastConfirmedLocation.confirmedAt)}
-            </time>
+          {confirmed && (
+            <>
+              <small>
+                {source && `${source} · `}
+                {updateAge(confirmed.confirmedAt, cutoffAt)}
+              </small>
+              <time dateTime={confirmed.confirmedAt}>{formatTime(confirmed.confirmedAt)}</time>
+            </>
           )}
         </div>
         <div>
           <dt>{delivered ? 'Entrega confirmada' : 'Llegada prevista'}</dt>
           <dd>
-            {delivered && item.projection.lastConfirmedLocation
-              ? formatTime(item.projection.lastConfirmedLocation.confirmedAt)
+            {delivered && confirmed
+              ? formatTime(confirmed.confirmedAt)
               : eta.kind === 'operator'
                 ? formatTime(eta.arrivalAt)
                 : eta.kind === 'estimate'
                   ? `${formatTime(eta.earliestAt)} – ${formatTime(eta.latestAt)}`
-                  : 'Sin previsión disponible'}
+                  : 'Sin previsión'}
           </dd>
           <small>
             {delivered
               ? 'Confirmada por el operador'
               : eta.kind === 'operator'
-                ? `Comunicada por ${item.operators.find((operator) => operator.id === eta.operatorId)?.name ?? 'el operador'}`
+                ? `Comunicada por ${operatorName(eta.operatorId) ?? 'el operador'}`
                 : eta.kind === 'estimate'
                   ? 'Intervalo estimado'
-                  : 'Pendiente del operador'}
+                  : eta.reason}
           </small>
         </div>
+        <div>
+          <dt>Fecha comprometida</dt>
+          <dd>
+            <time dateTime={item.shipment.committedDeliveryAt}>
+              {formatTime(item.shipment.committedDeliveryAt)}
+            </time>
+          </dd>
+        </div>
+        {incidents.length > 0 && (
+          <div className="map-selected-incidents">
+            <dt>Incidencias activas</dt>
+            {incidents.map((incident) => (
+              <dd key={incident.id} data-severity={incident.severity}>
+                <AlertTriangle size={12} aria-hidden="true" />
+                {incidentKindLabels[incident.kind]} · {severityLabels[incident.severity]}
+              </dd>
+            ))}
+          </div>
+        )}
       </dl>
       <div className="map-selected-footer">
         <button type="button" onClick={onOpen}>
