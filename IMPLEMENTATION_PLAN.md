@@ -331,7 +331,7 @@ La prioridad es demostrar seguimiento multimodal, confianza en la información, 
 - [x] Fase 0 completada.
 - [x] Fase 1 completada.
 - [x] Fase 2 completada.
-- [ ] Fase 3 completada.
+- [ ] Fase 3 completada. Bloque 1, pasos de la demo, completado.
 - [ ] Fase 4 completada.
 - [ ] Fase 5 completada.
 
@@ -422,9 +422,17 @@ No se añaden dependencias. Continúan los avisos conocidos de `THREE.Clock` y t
 
 ### Siguiente trabajo
 
-Continuar con la fase 2. Leer primero este plan, `README.md` y `src/domain/README.md`. Antes de delegar, asignar archivos exactos y criterios de aceptación a dominio, escena e interfaz, manteniendo al principal en app, store, componentes compartidos y contratos. Conservar el recorrido de la fase 1 y sus pruebas durante la ampliación del dataset y las vistas.
+Continuar con la fase 3. El bloque 1, pasos de la demo, está completado; su resultado está al final de este documento. Quedan:
 
-El documento permite continuar en este chat o abrir uno nuevo sin reconstruir las decisiones de la conversación. Si se cambia de chat, pedir: "Lee IMPLEMENTATION_PLAN.md, README.md y src/domain/README.md. Continúa con la fase 2 y sus verificaciones, manteniendo el alcance acordado".
+- Acciones e incidencias: aportar el documento de ATL-TR-004, avisar al cliente y pedir información al operador, con prioridad, evidencias y registro de actividad. Al terminar los pasos, la bandeja de atención solo debe quedar vacía tras aportar el documento.
+- Avisos al cliente dentro de la aplicación, visibles al cambiar a su identidad.
+- Reloj completo: reproducir y pausar sobre los mismos pasos, además de avanzar y reiniciar.
+- Análisis: hallazgos y recomendaciones deterministas con enlaces a los envíos que los sustentan.
+- Persistencia versionada en localStorage, cambios de identidad y estados vacíos.
+
+Leer primero este plan, `README.md` y `src/domain/README.md`. Conservar los recorridos de las fases 1 y 2, los pasos de la demo y sus pruebas.
+
+El documento permite continuar en este chat o abrir uno nuevo sin reconstruir las decisiones de la conversación. Si se cambia de chat, pedir: "Lee IMPLEMENTATION_PLAN.md, README.md y src/domain/README.md. Continúa con la fase 3 después del bloque 1 y sus verificaciones, manteniendo el alcance acordado".
 
 ## Cambio de la vista general: mapa operativo
 
