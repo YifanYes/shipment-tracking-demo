@@ -18,7 +18,7 @@ La identidad de operaciones puede consultar el envío. El cliente de otra cuenta
 
 1. Entrar como `Operaciones Madrid`. El reloj empieza el 31 de octubre de 2026 a las 11:00 en Madrid.
 2. Seleccionar el marcador `ATL-ES-001` o su fila bajo el mapa y pulsar `Abrir detalle`, o abrir el envío desde el listado. Se abre su página de detalle, con tarjetas de seguimiento, recorrido y una timeline vertical de eventos del operador. `Volver a envíos` regresa al listado.
-3. Pulsar `Confirmar entrega · +2 h`. El reloj avanza a las 13:00 y recibe el evento `DELIVERED`. Cambian a la vez el mapa, el detalle, el listado y los contadores. El envío sale del mapa de envíos en curso y sigue disponible en el listado y el detalle.
+3. Pulsar `Entrega de ATL-ES-001` en el escenario de la fase 1 (en la demo completa, los pasos se describen en `IMPLEMENTATION_PLAN.md`). El reloj avanza a las 13:00 y recibe el evento `DELIVERED`. Cambian a la vez el mapa, el detalle, el listado y los contadores. El envío sale del mapa de envíos en curso y sigue disponible en el listado y el detalle.
 4. Cambiar a `Cliente · Levante Retail`. Desaparecen la selección y el envío ajeno, incluidos ruta y contadores. Volver a operaciones permite consultar la entrega desde el listado.
 5. Pulsar `Reiniciar` para restaurar los datos y el reloj iniciales.
 

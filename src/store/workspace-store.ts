@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import type { DemoSeed } from '@/domain/contracts'
 import { demoSeed } from '@/data/scenarios'
 import { selectVisibleShipments, type TrackingState } from '@/domain/selectors'
-import { applyScheduledEvents, nextScheduledAt } from '@/simulation/clock'
+import { applyScheduledEvents, nextDemoStep } from '@/simulation/clock'
 
 export type WorkspaceView = 'overview' | 'shipments' | 'shipment-detail' | 'analytics'
 
@@ -14,13 +14,13 @@ export interface WorkspaceState extends TrackingState {
   toggleSidebar: () => void
   setIdentity: (identityId: string) => void
   selectShipment: (shipmentId: string | null) => void
-  /** Move the clock to the next scheduled event and incorporate it. Operations only. */
+  /** Move the clock to the next demo step and release its events. Operations only. */
   advanceDemo: () => void
   resetDemo: () => void
 }
 
-export function selectNextEventAt(state: Pick<WorkspaceState, 'seed' | 'dataset' | 'cutoffAt'>) {
-  return nextScheduledAt(state.dataset, state.seed.scenarios, state.cutoffAt)
+export function selectNextStep(state: Pick<WorkspaceState, 'seed' | 'dataset' | 'cutoffAt'>) {
+  return nextDemoStep(state.dataset, state.seed.steps, state.cutoffAt)
 }
 
 /** The factory keeps tests and future demo instances independent. */
@@ -61,11 +61,11 @@ export const createWorkspaceStore = (seed: DemoSeed = demoSeed) =>
       }),
     advanceDemo: () =>
       set((state) => {
-        const next = selectNextEventAt(state)
+        const next = selectNextStep(state)
         if (!isOperations(state) || !next) return {}
         return {
-          cutoffAt: next,
-          dataset: applyScheduledEvents(state.dataset, state.seed.scenarios, next),
+          cutoffAt: next.at,
+          dataset: applyScheduledEvents(state.dataset, state.seed.scenarios, next.at),
         }
       }),
     resetDemo: () =>

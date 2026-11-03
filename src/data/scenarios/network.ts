@@ -14,18 +14,19 @@ export const originSiteIds = ['site-madrid', 'site-barcelona', 'site-zaragoza'] 
 
 /** The first identity is the default one. */
 export const identities: readonly DemoIdentity[] = [
-  {
-    id: 'operations-madrid',
-    name: 'Operaciones Madrid',
-    role: 'operations',
-    allowedOriginSiteIds: ['site-madrid'],
-    allowedAccountIds: allAccounts,
-  },
+  // The demo starts with the whole network so every step of the story is visible.
   {
     id: 'operations-network',
     name: 'Operaciones · Red',
     role: 'operations',
     allowedOriginSiteIds: originSiteIds,
+    allowedAccountIds: allAccounts,
+  },
+  {
+    id: 'operations-madrid',
+    name: 'Operaciones Madrid',
+    role: 'operations',
+    allowedOriginSiteIds: ['site-madrid'],
     allowedAccountIds: allAccounts,
   },
   ...accounts.map((account): DemoIdentity => ({

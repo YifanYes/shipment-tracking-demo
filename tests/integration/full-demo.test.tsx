@@ -103,4 +103,28 @@ describe('demo completa', () => {
     expect(container.querySelector('.detail-status')?.textContent).not.toContain('En aduana')
     expect(container.querySelector('.event-list')?.textContent).toContain('CUSTOMS_RELEASED')
   })
+
+  it('avisa con un toast de lo ocurrido y solo cuenta la historia si el envío es visible', async () => {
+    const advance = async () =>
+      act(async () =>
+        container.querySelector<HTMLButtonElement>('button[aria-label^="Siguiente paso"]')!.click(),
+      )
+    useWorkspaceStore.getState().setIdentity('operations-network')
+    await mount()
+    await advance()
+    expect(document.body.textContent).toContain('ATL-IT-003 llegará tarde a Milán')
+    expect(document.body.textContent).toContain('Además, 1 envío entregado.')
+    expect(
+      container.querySelector('button[aria-label^="Siguiente paso"]')?.getAttribute('aria-label'),
+    ).toBe('Siguiente paso: Respuesta del operador de ATL-ES-005')
+
+    // Resetting from the sidebar also clears the toasts.
+    await act(async () =>
+      container.querySelector<HTMLButtonElement>('button[aria-label="Reiniciar"]')!.click(),
+    )
+    await act(async () => useWorkspaceStore.getState().setIdentity('operations-madrid'))
+    await advance()
+    expect(document.body.textContent).toContain('Retraso marítimo de ATL-IT-003')
+    expect(document.body.textContent).not.toContain('Naviera Boreal')
+  })
 })

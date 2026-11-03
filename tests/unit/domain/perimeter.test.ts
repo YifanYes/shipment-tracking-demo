@@ -43,8 +43,8 @@ describe('perímetro del dataset completo', () => {
     }
   })
 
-  it('operaciones Madrid es la identidad inicial y solo ve su centro', () => {
-    expect(dataset.identities[0]!.id).toBe('operations-madrid')
+  it('la demo empieza con toda la red y operaciones Madrid solo ve su centro', () => {
+    expect(dataset.identities[0]!.id).toBe('operations-network')
     expect(
       views('operations-madrid').every((view) => view.shipment.originSiteId === 'site-madrid'),
     ).toBe(true)

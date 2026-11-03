@@ -1,5 +1,6 @@
-import type { DemoDataset, DemoSeed } from '@/domain/contracts'
+import type { DemoDataset, DemoSeed, DemoStep } from '@/domain/contracts'
 import { active } from './active'
+import { buildBackgroundScenario } from './background'
 import type { DataPart } from './builders'
 import { customsHold, customsHoldScenario } from './customs-hold'
 import { buildHistory } from './history'
@@ -10,7 +11,60 @@ import { seaDelay, seaDelayScenario } from './sea-delay'
 import { staleNoEta, staleNoEtaScenario } from './stale-no-eta'
 
 /** Phase 1 seed: a single national shipment. Kept for regression tests. */
-export const nationalSeed: DemoSeed = { dataset: nationalDataset, scenarios: [nationalScenario] }
+export const nationalSeed: DemoSeed = {
+  dataset: nationalDataset,
+  scenarios: [nationalScenario],
+  steps: [{ id: 'national-delivery', label: 'Entrega de ATL-ES-001', offsetMinutes: 120 }],
+}
+
+/**
+ * Demo moments, in the order of the demo script. Each one releases the story events up to its
+ * time together with the routine progress of the rest of the operation.
+ */
+export const demoSteps: readonly DemoStep[] = [
+  {
+    id: 'sea-delay-notice',
+    label: 'Retraso marítimo de ATL-IT-003',
+    offsetMinutes: 90,
+    story: {
+      shipmentId: 'shipment-it-003',
+      title: 'ATL-IT-003 llegará tarde a Milán',
+      detail: 'Nueva ETA: 2 nov, 07:00. Comprometida: 1 nov, 23:00.',
+    },
+  },
+  {
+    id: 'operator-reply',
+    label: 'Respuesta del operador de ATL-ES-005',
+    offsetMinutes: 180,
+    story: {
+      shipmentId: 'shipment-es-005',
+      title: 'ATL-ES-005 vuelve a informar',
+      detail: 'Sigue en ruta. Entrega prevista a las 18:30.',
+    },
+  },
+  { id: 'afternoon-deliveries', label: 'Entregas de la tarde', offsetMinutes: 480 },
+  {
+    id: 'customs-release',
+    label: 'Liberación aduanera de ATL-TR-004',
+    offsetMinutes: 1560,
+    story: {
+      shipmentId: 'shipment-tr-004',
+      title: 'ATL-TR-004 sale de la aduana',
+      detail: 'Entrega prevista en Adana a las 17:00, con retraso.',
+    },
+  },
+  { id: 'international-deliveries', label: 'Entregas internacionales', offsetMinutes: 1740 },
+  {
+    id: 'revised-arrival',
+    label: 'Llegada de ATL-IT-003',
+    offsetMinutes: 2535,
+    story: {
+      shipmentId: 'shipment-it-003',
+      title: 'ATL-IT-003 entregado en Milán',
+      detail: 'Con retraso sobre la fecha comprometida.',
+    },
+  },
+]
 
 /** Builds the full demo dataset. Pure and deterministic: two builds are deep-equal. */
 export function buildDemoSeed(): DemoSeed {
@@ -31,15 +85,18 @@ export function buildDemoSeed(): DemoSeed {
     events: parts.flatMap((part) => part.events),
     documents: parts.flatMap((part) => part.documents),
   }
+  const story = [
+    nationalScenario,
+    multimodalScenario,
+    seaDelayScenario,
+    customsHoldScenario,
+    staleNoEtaScenario,
+  ]
+  const storyShipmentIds = story.flatMap((scenario) => scenario.shipmentIds)
   return {
     dataset,
-    scenarios: [
-      nationalScenario,
-      multimodalScenario,
-      seaDelayScenario,
-      customsHoldScenario,
-      staleNoEtaScenario,
-    ],
+    scenarios: [...story, buildBackgroundScenario(dataset, storyShipmentIds, demoSteps)],
+    steps: demoSteps,
   }
 }
 

@@ -228,6 +228,26 @@ Cierre: cada entrega cumple sus contratos; no hay errores de tipos; los escenari
 
 Responsable: agente principal, con apoyos acotados cuando proceda.
 
+Bloque 1. Pasos de la demo. La revisión de la fase 2 mostró que el reloj exigía 20 clics, la mayoría de eventos técnicos, y que al terminar la bandeja de atención crecía: los envíos sin escenario dejaban de recibir eventos y algunos problemas no tenían forma de resolverse. Se acuerda:
+
+- El reloj avanza por pasos con nombre. Cada paso libera los eventos de la historia hasta su hora y el avance habitual del resto de la operación. El control indica el paso siguiente y su hora.
+- Los eventos resuelven lo físico (respuestas del operador, liberación aduanera y entregas). Las acciones de la fase 3 resuelven lo documental y los avisos.
+- Un código desconocido requiere atención hasta que el operador confirma un evento conocido posterior en el mismo tramo. El evento original se conserva en la cronología.
+- Un envío entregado solo requiere atención si mantiene una incidencia abierta, como un documento pendiente.
+- La demo empieza con Operaciones · Red para que todos los pasos sean visibles. Operaciones Madrid demuestra el perímetro por centro.
+
+| Paso                                 | Hora          | Qué ocurre                                                                                                                       | Qué enseña                                                                               |
+| ------------------------------------ | ------------- | -------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Inicio                               | 31 oct, 11:00 | ATL-TR-004 retenido por falta de documento, ATL-ES-005 sin noticias, ATL-ES-012 y ATL-ES-021 con retraso, ATL-ES-011 sin recoger | Bandeja, mapa y detalle con evidencias                                                   |
+| Retraso marítimo de ATL-IT-003       | 31 oct, 12:30 | La naviera comunica una ETA posterior al compromiso; ATL-ES-005 envía un código desconocido                                      | Cambio de ETA con fuente, nueva incidencia y código pendiente de clasificar              |
+| Respuesta del operador de ATL-ES-005 | 31 oct, 14:00 | ATL-ES-005 vuelve a informar con un código conocido; ATL-ES-001 se entrega a tiempo; ATL-MA-002 llega a Algeciras                | Información desactualizada y código desconocido resueltos                                |
+| Entregas de la tarde                 | 31 oct, 19:00 | ATL-ES-005, ATL-ES-012 y ATL-ES-021 se entregan; ATL-MA-002 zarpa                                                                | Retrasos cerrados con la entrega, contadores y mapa sincronizados                        |
+| Liberación aduanera de ATL-TR-004    | 1 nov, 13:00  | Llega `CUSTOMS_RELEASED`; ATL-MA-002 pasa la aduana de Tanger Med                                                                | El documento aportado no libera; el evento sí                                            |
+| Entregas internacionales             | 1 nov, 16:00  | ATL-MA-002 y ATL-TR-004 se entregan en Casablanca y Adana                                                                        | Recorrido multimodal completo                                                            |
+| Llegada de ATL-IT-003                | 2 nov, 05:15  | ATL-IT-003 llega con la ETA revisada y se entrega en Milán                                                                       | Estado final: solo queda el documento de ATL-TR-004, que resuelve la acción de aportarlo |
+
+Las fases restantes amplían este bloque: las acciones y avisos actúan sobre el estado de cada paso, y reproducir y pausar recorren los mismos pasos.
+
 - Conectar incidencias, prioridad, evidencias, acciones y avisos.
 - Completar el reloj controlado con reproducir, pausar, avanzar y reiniciar.
 - Conectar la pantalla de análisis a las métricas del histórico.
@@ -452,3 +472,14 @@ Verificación de cierre:
 Revisión en navegador del 3 de noviembre de 2026 sobre el build de producción, a 1280 × 800 y 390 × 844, sin errores de consola ni desbordamiento horizontal: mapa con dataset completo, selección y ficha de ATL-TR-004, detalle con incidencias, documentos y eventos, búsqueda del listado, inicio y detalle del cliente sin códigos internos, enlace ajeno rechazado, Análisis oculto al cliente, reporte generado, recorrido de los 20 eventos programados y reinicio. Correcciones aplicadas: el cierre de un tramo intermedio se mostraba como "Entregado"; filas del listado alineadas en columnas y con el tipo de incidencia en lugar de "Incidencia pendiente"; filtros en una línea; filtros del reporte con una sola opción ocultos; botón del cliente junto al título; etiqueta del vehículo seleccionado dentro del mapa; el mapa se titula "Envíos sin entregar" porque incluye planificados.
 
 Pendientes para las fases siguientes: al recorrer todos los eventos programados (unas 43 h), los envíos activos sin escenario dejan de recibir eventos y pasan a información antigua y fuera de plazo, de modo que la bandeja de atención crece hasta 22; el reloj completo de la fase 3 debe añadirles eventos o limitar el avance. La métrica de tránsito por cada 100 km compara operadores de carretera y mar en el mismo grupo. el dataset se incluye en el fragmento principal, de unos 550 kB sin comprimir; el tramo Algeciras → Tanger Med cruza unos kilómetros del contorno simplificado de `map-land.geojson`; la liberación aduanera reutiliza el hito `collected`; los filtros del listado se reinician al volver del detalle; las acciones, avisos, hallazgos del reporte, reloj completo y persistencia pertenecen a la fase 3.
+
+## Resultado del bloque 1 de la fase 3
+
+Completado el 3 de noviembre de 2026.
+
+- `DemoStep` y `DemoSeed.steps` definen los seis pasos; `nextDemoStep` devuelve el siguiente y `advanceDemo` libera sus eventos. El control de la sidebar muestra el nombre y la hora del paso, y "Demo completada" al terminar.
+- `data/scenarios/background.ts` genera, de forma determinista, los hitos de los 19 envíos activos sin escenario hasta su ETA o antes de su compromiso, con avisos de posición para que ningún paso los encuentre desactualizados.
+- `attentionReasons` aplica las nuevas reglas de códigos desconocidos y envíos entregados.
+- Al avanzar un paso aparece un aviso arriba a la derecha, bajo la barra superior. Cada paso puede definir en `DemoStep.story` un titular y una frase sobre su envío principal, que solo se muestran si la identidad lo ve. El resto se resume en el número de envíos entregados en su perímetro, con cuántos llegaron tarde; `shipmentChanges` compara las vistas autorizadas antes y después del paso. El aviso usa el Toast de Base UI y se cierra a los 8 segundos, con su botón o al reiniciar.
+
+Verificación: `pnpm check` y `pnpm test` (108 pruebas) correctos. Las pruebas del reloj comprueban el orden de los pasos, que ningún envío de fondo queda desactualizado en ningún paso, que al terminar los cinco escenarios están entregados y solo ATL-TR-004 requiere atención por su documento, y que reiniciar reproduce el mismo recorrido.

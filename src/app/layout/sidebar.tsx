@@ -9,7 +9,11 @@ interface Props {
   collapsed: boolean
   items: readonly NavigationItem[]
   onNavigate: (view: NavigationItem['id']) => void
-  demoControls: { nextEventAt: string | null; onAdvance: () => void; onReset: () => void } | null
+  demoControls: {
+    nextStep: { label: string; at: string } | null
+    onAdvance: () => void
+    onReset: () => void
+  } | null
 }
 
 export function Sidebar({ view, collapsed, items, onNavigate, demoControls }: Props) {
@@ -49,15 +53,21 @@ export function Sidebar({ view, collapsed, items, onNavigate, demoControls }: Pr
           <Button
             variant="outline"
             className="sidebar-demo-button"
-            disabled={!demoControls.nextEventAt}
+            disabled={!demoControls.nextStep}
             onClick={demoControls.onAdvance}
-            aria-label="Siguiente evento"
-            title="Siguiente evento"
+            aria-label={
+              demoControls.nextStep
+                ? `Siguiente paso: ${demoControls.nextStep.label}`
+                : 'Demo completada'
+            }
+            title={collapsed ? (demoControls.nextStep?.label ?? 'Demo completada') : undefined}
           >
             <SkipForward size={16} aria-hidden="true" />
             <span className="sidebar-action-label">
-              Siguiente evento
-              {demoControls.nextEventAt && <small>{formatTime(demoControls.nextEventAt)}</small>}
+              {/* Non-breaking hyphens keep shipment references on one line. */}
+              {demoControls.nextStep?.label.replace(/(\w)-(?=\w)/g, '$1\u2011') ??
+                'Demo completada'}
+              {demoControls.nextStep && <small>{formatTime(demoControls.nextStep.at)}</small>}
             </span>
           </Button>
           <Button
@@ -65,7 +75,7 @@ export function Sidebar({ view, collapsed, items, onNavigate, demoControls }: Pr
             className="sidebar-demo-button"
             onClick={demoControls.onReset}
             aria-label="Reiniciar"
-            title="Reiniciar"
+            title={collapsed ? 'Reiniciar' : undefined}
           >
             <RotateCcw size={16} aria-hidden="true" />
             <span className="sidebar-action-label">Reiniciar</span>

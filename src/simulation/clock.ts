@@ -1,4 +1,4 @@
-import type { DemoDataset, DemoScenario, IsoDateTime } from '@/domain/contracts'
+import type { DemoDataset, DemoScenario, DemoStep, IsoDateTime } from '@/domain/contracts'
 
 const releaseAt = (dataset: DemoDataset, offsetMinutes: number) =>
   Date.parse(dataset.referenceTime) + offsetMinutes * 60_000
@@ -32,4 +32,18 @@ export function nextScheduledAt(
     .filter((time) => time > Date.parse(cutoffAt))
     .sort((a, b) => a - b)[0]
   return next === undefined ? null : new Date(next).toISOString()
+}
+
+/** Next named step after the cutoff, with its absolute time, or null at the end of the demo. */
+export function nextDemoStep(
+  dataset: DemoDataset,
+  steps: readonly DemoStep[],
+  cutoffAt: IsoDateTime,
+): (DemoStep & { at: IsoDateTime }) | null {
+  const step = [...steps]
+    .sort((a, b) => a.offsetMinutes - b.offsetMinutes)
+    .find((item) => releaseAt(dataset, item.offsetMinutes) > Date.parse(cutoffAt))
+  return step
+    ? { ...step, at: new Date(releaseAt(dataset, step.offsetMinutes)).toISOString() }
+    : null
 }

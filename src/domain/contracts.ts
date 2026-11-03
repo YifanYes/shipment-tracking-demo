@@ -308,8 +308,22 @@ export interface DemoScenario {
   scheduledEvents: readonly ScheduledEvent[]
 }
 
+/**
+ * A named moment of the demo. Advancing moves the clock to its time and releases every
+ * scheduled event up to it, from the story scenarios and from the rest of the operation.
+ */
+export interface DemoStep {
+  id: EntityId
+  label: string
+  offsetMinutes: number
+  /** What the step tells about its main shipment. Shown only if that shipment is visible. */
+  story?: { shipmentId: EntityId; title: string; detail: string }
+}
+
 /** Initial state of the demo: facts already received plus the events the clock will release. */
 export interface DemoSeed {
   dataset: DemoDataset
   scenarios: readonly DemoScenario[]
+  /** Ordered by time. The clock only stops at these moments. */
+  steps: readonly DemoStep[]
 }

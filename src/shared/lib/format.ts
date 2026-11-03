@@ -1,4 +1,4 @@
-import type { LegStage } from '@/domain/contracts'
+import type { IncidentKind, LegStage } from '@/domain/contracts'
 
 export const stageLabels: Record<LegStage, string> = {
   planned: 'Planificado',
@@ -30,4 +30,21 @@ export function updateAge(confirmedAt: string | undefined, cutoffAt: string) {
   const hours = Math.floor(minutes / 60)
   if (hours < 24) return `Actualizado hace ${hours} h`
   return `Actualizado hace ${Math.floor(hours / 24)} días`
+}
+
+export const incidentKindLabels: Record<IncidentKind, string> = {
+  delay: 'Retraso',
+  hold: 'Retención',
+  stale: 'Sin actualizaciones',
+  customs: 'Aduana',
+  missing_document: 'Documentación pendiente',
+}
+
+/** "A, B y C", or "A, B y 3 más" when the list is long. */
+export function referenceList(references: readonly string[], visible = 2) {
+  if (references.length <= visible + 1)
+    return references.length > 1
+      ? `${references.slice(0, -1).join(', ')} y ${references.at(-1)}`
+      : (references[0] ?? '')
+  return `${references.slice(0, visible).join(', ')} y ${references.length - visible} más`
 }

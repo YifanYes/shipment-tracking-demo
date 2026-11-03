@@ -38,7 +38,9 @@ Las métricas históricas, las incidencias y el resto de adaptadores se implemen
 ## Contratos de la fase 2
 
 - `DemoSeed` reúne el dataset inicial y los escenarios. `data/scenarios/index.ts` exporta `demoSeed`, el dataset completo, y `nationalSeed`, el envío de la fase 1 que conservan sus pruebas. El store recibe una semilla y `resetDemo` vuelve a ella.
-- `applyScheduledEvents(dataset, scenarios, cutoffAt)` incorpora los eventos programados liberados hasta la fecha de corte, una sola vez por ID. `nextScheduledAt` devuelve la siguiente liberación. `advanceDemo` mueve el reloj a esa fecha; solo operaciones controla la demo.
+- `applyScheduledEvents(dataset, scenarios, cutoffAt)` incorpora los eventos programados liberados hasta la fecha de corte, una sola vez por ID. `DemoSeed.steps` define los pasos con nombre de la demo; `nextDemoStep` devuelve el siguiente y `advanceDemo` mueve el reloj a su hora. Solo operaciones controla la demo.
+- El escenario `background-operations` mantiene el resto de envíos activos: completa sus hitos hasta la ETA comunicada, o antes del compromiso si no la hay, y envía avisos de posición cada dos horas como máximo.
+- `attentionReasons` ignora los códigos desconocidos superados por un evento conocido posterior del mismo tramo. En un envío entregado solo cuentan las incidencias abiertas.
 - `ShipmentProjection.legStages` contiene el hito más avanzado confirmado de cada tramo. Detalle y mapa lo usan en lugar de recalcular hitos.
 - `ShipmentView.incidents` contiene las incidencias activas y resueltas de `deriveIncidents`, con IDs estables y evidencias del evento o documento. `projection.incidentIds` contiene solo las activas. La atención de cada incidencia es `unreviewed` hasta las acciones de la fase 3.
 - `buildLogisticsReport` recibe vistas ya autorizadas, filtros, fecha de corte y revisión del dataset. Las listas de filtros vacías equivalen a todo lo visible. La fase 2 entrega las métricas; la fase 3, hallazgos y recomendaciones.
