@@ -17,44 +17,60 @@ export function isReportOutdated(report: LogisticsReport, context: ReportContext
   return report.cutoffAt !== context.cutoffAt || report.datasetRevision !== context.datasetRevision
 }
 
-export const metricGroupLabels: Record<ReportMetricGroup, string> = {
-  delays: 'Demoras',
-  legs: 'Esperas por tramo',
-  ports: 'Esperas en puerto',
-  customs: 'Esperas en aduana',
-  sites: 'Esperas por centro',
-  operators: 'Esperas por operador',
+type NodeGroup = Exclude<ReportMetricGroup, 'delays'>
+
+export const nodeGroupLabels: Record<NodeGroup, string> = {
+  ports: 'Estancia en puerto',
+  customs: 'Despacho aduanero',
+  sites: 'Recogida en centro de origen',
 }
 
-export interface MetricGroup {
-  key: ReportMetricGroup
-  label: string
-  /** Completed milestones and open waits are never mixed in the same block. */
-  populations: { population: ReportMetric['population']; metrics: ReportMetric[] }[]
+export interface NodeWait {
+  metric: ReportMetric
+  name: string
+  /** Share of the longest wait in its group, 0 to 1, for the bar. */
+  share: number
+  /** The metric is the slow side of a finding. */
+  flagged: boolean
 }
 
-export function groupMetrics(metrics: readonly ReportMetric[]): MetricGroup[] {
-  const order = Object.keys(metricGroupLabels) as ReportMetricGroup[]
-  return order
+/**
+ * Waits per port, customs office and origin site, one block per group and slowest first.
+ * Node names come from the visible views; open waits belong to the attention queue, not here.
+ */
+export function nodeWaits(
+  report: Pick<LogisticsReport, 'metrics' | 'findings'>,
+  views: readonly ShipmentView[],
+): { key: NodeGroup; label: string; rows: NodeWait[] }[] {
+  const names = new Map<string, string>()
+  for (const view of views) {
+    for (const location of view.locations) names.set(location.id, location.name)
+    if (view.origin) names.set(view.origin.id, view.origin.name)
+  }
+  const flagged = new Set(report.findings.map((finding) => finding.metricIds[0]))
+  return (Object.keys(nodeGroupLabels) as NodeGroup[])
     .map((key) => {
-      const inGroup = metrics.filter((metric) => metric.group === key)
-      return {
-        key,
-        label: metricGroupLabels[key],
-        populations: (['completed', 'open'] as const)
-          .map((population) => ({
-            population,
-            metrics: inGroup.filter((metric) => metric.population === population),
-          }))
-          .filter((entry) => entry.metrics.length > 0),
-      }
+      const metrics = report.metrics.filter(
+        (metric) => metric.group === key && metric.population === 'completed',
+      )
+      const longest = Math.max(0, ...metrics.map((metric) => metric.value ?? 0))
+      const rows = metrics
+        .map((metric) => {
+          const id = metric.id.slice(metric.id.indexOf(':') + 1)
+          return {
+            metric,
+            name: names.get(id) ?? metric.label,
+            share: metric.value !== null && longest > 0 ? metric.value / longest : 0,
+            flagged: flagged.has(metric.id),
+          }
+        })
+        .sort(
+          (a, b) =>
+            (b.metric.value ?? -1) - (a.metric.value ?? -1) || a.name.localeCompare(b.name, 'es'),
+        )
+      return { key, label: nodeGroupLabels[key], rows }
     })
-    .filter((group) => group.populations.length > 0)
-}
-
-export const populationLabels: Record<ReportMetric['population'], string> = {
-  completed: 'Hitos completados',
-  open: 'Esperas abiertas',
+    .filter((group) => group.rows.length > 0)
 }
 
 const numberFormat = new Intl.NumberFormat('es-ES', { maximumFractionDigits: 1 })

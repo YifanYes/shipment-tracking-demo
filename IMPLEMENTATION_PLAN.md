@@ -125,7 +125,7 @@ Pantalla de operaciones con selección de periodo, centros y operadores, y acci�
 El reporte contendrá:
 
 - Resumen de demoras y envíos afectados.
-- Tiempos de espera y cuellos de botella por tramo, puerto, aduana, centro y operador.
+- Tiempos de espera y cuellos de botella por puerto, aduana y centro de origen.
 - Comparaciones con número de observaciones y definición de la métrica.
 - Enlaces a los envíos que sustentan cada hallazgo.
 - Recomendaciones priorizadas y factores que requieren validación.
@@ -133,7 +133,7 @@ El reporte contendrá:
 
 Las métricas se calcularán sobre los datos filtrados. Las plantillas redactarán conclusiones a partir de esos cálculos. Las relaciones observadas se presentarán como indicios cuando no exista evidencia causal. Cualquier estimación de ahorro explicará sus supuestos.
 
-Se distinguirán hitos completados y esperas abiertas para evitar comparar duraciones incompatibles. Un reporte conservará su fecha de corte. Si cambia el estado relevante, se ofrecerá regenerarlo. El histórico y los enlaces respetarán el perímetro de la identidad actual.
+Las esperas por nodo solo usan hitos completados; lo que sigue abierto pertenece a la bandeja de atención. Un reporte conservará su fecha de corte. Si cambia el estado relevante, se ofrecerá regenerarlo. El histórico y los enlaces respetarán el perímetro de la identidad actual.
 
 ## Stack y arquitectura
 
@@ -331,7 +331,7 @@ La prioridad es demostrar seguimiento multimodal, confianza en la información, 
 - [x] Fase 0 completada.
 - [x] Fase 1 completada.
 - [x] Fase 2 completada.
-- [ ] Fase 3 completada. Bloque 1, pasos de la demo, completado.
+- [ ] Fase 3 completada. Bloques de pasos, acciones, avisos, reloj, hallazgos y persistencia implementados y revisados en navegador; falta la revisión manual del usuario.
 - [ ] Fase 4 completada.
 - [ ] Fase 5 completada.
 
@@ -422,17 +422,11 @@ No se añaden dependencias. Continúan los avisos conocidos de `THREE.Clock` y t
 
 ### Siguiente trabajo
 
-Continuar con la fase 3. El bloque 1, pasos de la demo, está completado; su resultado está al final de este documento. Quedan:
-
-- Acciones e incidencias: aportar el documento de ATL-TR-004, avisar al cliente y pedir información al operador, con prioridad, evidencias y registro de actividad. Al terminar los pasos, la bandeja de atención solo debe quedar vacía tras aportar el documento.
-- Avisos al cliente dentro de la aplicación, visibles al cambiar a su identidad.
-- Reloj completo: reproducir y pausar sobre los mismos pasos, además de avanzar y reiniciar.
-- Análisis: hallazgos y recomendaciones deterministas con enlaces a los envíos que los sustentan.
-- Persistencia versionada en localStorage, cambios de identidad y estados vacíos.
+Cerrar la fase 3 con la revisión manual del usuario y decidir si los avisos al cliente de envíos ya entregados deben seguir en su inicio. Después, continuar con la fase 4.
 
 Leer primero este plan, `README.md` y `src/domain/README.md`. Conservar los recorridos de las fases 1 y 2, los pasos de la demo y sus pruebas.
 
-El documento permite continuar en este chat o abrir uno nuevo sin reconstruir las decisiones de la conversación. Si se cambia de chat, pedir: "Lee IMPLEMENTATION_PLAN.md, README.md y src/domain/README.md. Continúa con la fase 3 después del bloque 1 y sus verificaciones, manteniendo el alcance acordado".
+El documento permite continuar en este chat o abrir uno nuevo sin reconstruir las decisiones de la conversación. Si se cambia de chat, pedir: "Lee IMPLEMENTATION_PLAN.md, README.md y src/domain/README.md. Cierra la fase 3 tras la revisión manual del usuario y continúa con la fase 4, manteniendo el alcance acordado".
 
 ## Cambio de la vista general: mapa operativo
 
@@ -491,3 +485,21 @@ Completado el 3 de noviembre de 2026.
 - Al avanzar un paso aparece un aviso arriba a la derecha, bajo la barra superior. Cada paso puede definir en `DemoStep.story` un titular y una frase sobre su envío principal, que solo se muestran si la identidad lo ve. El resto se resume en el número de envíos entregados en su perímetro, con cuántos llegaron tarde; `shipmentChanges` compara las vistas autorizadas antes y después del paso. El aviso usa el Toast de Base UI y se cierra a los 8 segundos, con su botón o al reiniciar.
 
 Verificación: `pnpm check` y `pnpm test` (108 pruebas) correctos. Las pruebas del reloj comprueban el orden de los pasos, que ningún envío de fondo queda desactualizado en ningún paso, que al terminar los cinco escenarios están entregados y solo ATL-TR-004 requiere atención por su documento, y que reiniciar reproduce el mismo recorrido.
+
+## Resultado del resto de la fase 3
+
+Implementado el 3 de noviembre de 2026 por el agente principal, sin delegación. Las reglas y contratos están en `src/domain/README.md`.
+
+- Acciones e incidencias: cada incidencia activa explica qué ha ocurrido y su impacto, y propone acciones con prioridad y las evidencias de la incidencia: aportar el documento, preparar un aviso al cliente o una solicitud al operador. Avisos y solicitudes se preparan en un diálogo con el mensaje editable. Registrar una acción actualiza la atención de la incidencia (sin revisar, en gestión, atendida), el registro de actividad del detalle y la bandeja, que muestra el estado y prioriza los envíos con acciones pendientes. Aportar el certificado de ATL-TR-004 resuelve la tarea documental; la aduana sigue retenida hasta `CUSTOMS_RELEASED`.
+- Avisos al cliente: los avisos registrados aparecen en el inicio y en el detalle del cliente del envío. Las solicitudes al operador y el registro de actividad son internos.
+- Reloj: reproducir y pausar recorren los mismos pasos con 5 s entre ellos, junto a avanzar y reiniciar.
+- Análisis: hallazgos y recomendaciones deterministas antes de las métricas. Con el histórico completo detectan la estancia en Valencia, el despacho en Felixstowe y las recogidas en Zaragoza, con muestra, estimación y supuestos, sin atribuirlos al operador; además, esperas abiertas en aduana, envíos fuera de plazo y la tasa de entregas a tiempo. Se corrigen las concordancias de las limitaciones ("1 envío").
+- Persistencia: identidad, paso, actividad y sidebar se guardan en `localStorage` versionado y se reconstruyen desde la semilla. Un estado incompatible se descarta.
+
+Verificación: `pnpm check`, `pnpm test` (25 archivos, 122 pruebas) y `pnpm build` correctos. Las pruebas nuevas cubren las acciones y sus reglas (perímetro, repetición, cliente sin permisos, documento sin liberación), el final de la demo con la bandeja vacía tras aportar el documento, los hallazgos contra sus métricas y filtros, la persistencia con estados manipulados, la reproducción y el recorrido en la interfaz de una incidencia desde la bandeja hasta el aviso del cliente.
+
+Revisión en navegador del 3 de noviembre de 2026 sobre el build de producción, a 1280 × 800 y 390 × 844, sin errores de consola: acciones y diálogos de ATL-TR-004 (mensaje vacío bloqueado, Escape devuelve el foco sin registrar), actividad, cola "En gestión", recarga con estado guardado, reproducir, pausar y parada al final con la bandeja vacía, hallazgos del reporte con sus envíos, avisos del cliente y reinicio. Correcciones aplicadas: la incidencia documental resuelta bajaba de severidad alta a media al dejar de estar activa; la explicación de "Avisar al cliente" y "Pedir posición y ETA" repetía el impacto de la incidencia; los envíos que sustentan un hallazgo no seguían orden de referencia; la región de notificaciones se anunciaba en inglés.
+
+Simplificación del reporte tras la revisión: el reporte muestra tres cifras (entregas a tiempo, en curso fuera de plazo y retraso medio), hasta tres hallazgos de cuellos de botella en lista, con supuestos, limitaciones y envíos plegados en "Detalle", y una tabla de esperas por nodo con barras y el nodo del hallazgo marcado. Se retiran del dominio la duración de tramos por modo, el tránsito por operador y las esperas abiertas por nodo, y los hallazgos de entregas a tiempo, fuera de plazo y despacho pendiente, que repetían cifras o la bandeja. Los filtros pasan a chips con "Todos" y la generación muestra durante 1,8 s los pasos de la consulta y un esqueleto, sin animación con movimiento reducido. Revisado en navegador a 1280 × 800 y 390 × 844.
+
+Pendiente para cerrar la fase: revisión manual del usuario y decidir si un aviso de retención debe seguir en el inicio del cliente cuando el envío ya se ha entregado. Siguen pendientes de fases posteriores el tamaño del fragmento de MapLibre y del dataset y los filtros del listado que se reinician al volver del detalle.

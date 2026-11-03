@@ -19,6 +19,7 @@ import {
   activeIncidents,
   attentionLines,
   attentionQueue,
+  attentionStateLabels,
   severityLabels,
   incidentKindLabels,
 } from '../lib/attention'
@@ -262,6 +263,9 @@ export function ShipmentOverview({ shipments, cutoffAt, onOpenShipment }: Props)
                       <li key={line.key} data-severity={line.severity}>
                         {line.label}
                         {line.severity && ` · ${severityLabels[line.severity]}`}
+                        {line.attention &&
+                          line.attention !== 'unreviewed' &&
+                          ` · ${attentionStateLabels[line.attention]}`}
                       </li>
                     ))}
                   </ul>

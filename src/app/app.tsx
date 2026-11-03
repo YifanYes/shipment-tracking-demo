@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 import { arrivalsToday } from '@/domain/attention'
 import { selectSummary, selectVisibleShipments } from '@/domain/selectors'
 import { OverviewMetrics, ShipmentOverview } from '@/features/overview'
@@ -8,6 +8,7 @@ import { ShipmentDetail, ShipmentList } from '@/features/shipments'
 import { shipmentChanges } from '@/domain/changes'
 import { Toaster, toastManager } from '@/shared/ui/toast'
 import { selectNextStep, useWorkspaceStore } from '@/store/workspace-store'
+import { PLAY_STEP_MS } from '@/simulation/clock'
 import { announceStep } from './demo-step-toast'
 import { Sidebar } from './layout/sidebar'
 import { Topbar } from './layout/topbar'
@@ -29,6 +30,25 @@ export function App() {
       : (navigationFor(identity.role).find((item) => item.id === view)?.label ?? 'Vista general')
   useWorkspaceNavigation()
 
+  /** Manual and automatic advance share the same step, toast and end condition. */
+  const advance = useCallback(() => {
+    const before = useWorkspaceStore.getState()
+    const step = selectNextStep(before)
+    if (!step) return before.setPlaying(false)
+    const previous = selectVisibleShipments(before)
+    before.advanceDemo()
+    const after = useWorkspaceStore.getState()
+    const views = selectVisibleShipments(after)
+    announceStep(step, shipmentChanges(previous, views), views)
+    if (!selectNextStep(after)) after.setPlaying(false)
+  }, [])
+
+  useEffect(() => {
+    if (!state.playing) return
+    const timer = window.setInterval(advance, PLAY_STEP_MS)
+    return () => window.clearInterval(timer)
+  }, [advance, state.playing])
+
   useEffect(() => {
     document.title = `${selected?.shipment.reference ?? pageTitle} | Atlas`
   }, [pageTitle, selected?.shipment.reference])
@@ -48,13 +68,13 @@ export function App() {
             identity.role === 'operations'
               ? {
                   nextStep: selectNextStep(state),
-                  onAdvance: () => {
-                    const step = selectNextStep(state)
-                    if (!step) return
-                    state.advanceDemo()
-                    const after = selectVisibleShipments(useWorkspaceStore.getState())
-                    announceStep(step, shipmentChanges(shipments, after), after)
+                  playing: state.playing,
+                  onTogglePlay: () => {
+                    if (state.playing) return state.setPlaying(false)
+                    state.setPlaying(true)
+                    advance()
                   },
+                  onAdvance: advance,
                   onReset: () => {
                     toastManager.close()
                     state.resetDemo()
@@ -120,6 +140,12 @@ export function App() {
                 audience={audience}
                 onBack={() => setView('shipments')}
                 onOpenShipment={state.selectShipment}
+                onRecordAction={(actionId, message) =>
+                  state.recordAction(selected.shipment.id, actionId, message)
+                }
+                actorName={(id) =>
+                  state.dataset.identities.find((item) => item.id === id)?.name ?? id
+                }
               />
             )}
             {view === 'analytics' && audience === 'operations' && (

@@ -6,6 +6,7 @@ import { App } from '@/app/app'
 import { demoSeed } from '@/data/scenarios'
 import { selectSummary, selectVisibleShipments } from '@/domain/selectors'
 import { useWorkspaceStore } from '@/store/workspace-store'
+import { PLAY_STEP_MS } from '@/simulation/clock'
 
 vi.mock(
   '@/features/overview/components/logistics-map',
@@ -126,5 +127,74 @@ describe('demo completa', () => {
     await advance()
     expect(document.body.textContent).toContain('Retraso marítimo de ATL-IT-003')
     expect(document.body.textContent).not.toContain('Naviera Boreal')
+  })
+
+  it('una incidencia recorre bandeja, detalle, acciones y aviso del cliente', async () => {
+    useWorkspaceStore.getState().setIdentity('operations-network')
+    await mount()
+    const queued = [...container.querySelectorAll('.attention-item')].find((item) =>
+      item.textContent?.includes('ATL-TR-004'),
+    )
+    expect(queued?.textContent).toContain('Retenido en aduana')
+    await act(async () => useWorkspaceStore.getState().selectShipment('shipment-tr-004'))
+    const card = () =>
+      [...container.querySelectorAll('.incident-card')].find(
+        (item) => item.querySelector('.incident-heading strong')?.textContent === 'Aduana',
+      )!
+    expect(card().textContent).toContain('Retenido en la aduana de Mersin')
+    const click = async (label: string, scope: ParentNode = container) =>
+      act(async () =>
+        [...scope.querySelectorAll('button')]
+          .find((button) => button.textContent?.trim() === label)!
+          .click(),
+      )
+
+    await click('Aportar documento')
+    const certificate = [...container.querySelectorAll('.document-item')].find((item) =>
+      item.textContent?.includes('A.TR'),
+    )
+    expect(certificate?.textContent).toContain('Disponible')
+    expect(container.querySelector('.detail-status')?.textContent).toContain('En aduana')
+
+    await click('Preparar aviso', card())
+    const dialog = document.body.querySelector('[data-slot="dialog-content"]')!
+    expect(dialog.textContent).toContain('Para: Levante Retail')
+    await click('Registrar aviso', dialog)
+    expect(document.body.querySelector('[data-slot="dialog-content"]')).toBeNull()
+    expect(container.querySelector('.activity-panel')?.textContent).toContain(
+      'Aviso al cliente · Levante Retail',
+    )
+    expect(card().textContent).toContain('En gestión')
+
+    await setIdentity('customer-levante')
+    const notices = container.querySelector('.customer-notices')
+    expect(notices?.textContent).toContain('ATL-TR-004: retenido en la aduana de Mersin')
+    expect(container.textContent).not.toContain('Solicitud al operador')
+  })
+
+  it('reproduce los pasos con pausa entre ellos y se detiene al pausar', async () => {
+    vi.useFakeTimers()
+    try {
+      useWorkspaceStore.getState().setIdentity('operations-network')
+      await mount()
+      const button = (label: string) =>
+        container.querySelector<HTMLButtonElement>(`button[aria-label="${label}"]`)!
+      await act(async () => button('Reproducir').click())
+      const first = useWorkspaceStore.getState().cutoffAt
+      expect(first).not.toBe(demoSeed.dataset.referenceTime)
+      await act(async () => vi.advanceTimersByTime(PLAY_STEP_MS))
+      const second = useWorkspaceStore.getState().cutoffAt
+      expect(Date.parse(second)).toBeGreaterThan(Date.parse(first))
+      await act(async () => button('Pausar').click())
+      await act(async () => vi.advanceTimersByTime(PLAY_STEP_MS * 3))
+      expect(useWorkspaceStore.getState().cutoffAt).toBe(second)
+      await act(async () => button('Reproducir').click())
+      for (let step = 0; step < demoSeed.steps.length; step++)
+        await act(async () => vi.advanceTimersByTime(PLAY_STEP_MS))
+      expect(button('Demo completada').disabled).toBe(true)
+      expect(useWorkspaceStore.getState().playing).toBe(false)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

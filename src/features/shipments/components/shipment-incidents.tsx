@@ -3,7 +3,9 @@ import type { EvidenceReference, ShipmentIncident, ShipmentView } from '@/domain
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { formatTime } from '@/shared/lib/format'
+import { explainIncident } from '@/domain/actions'
 import { focusEvidence } from '../lib/evidence'
+import { IncidentActions, type RecordAction } from './incident-actions'
 import {
   evidenceTargetId,
   incidentKindLabels,
@@ -23,12 +25,17 @@ export function ShipmentIncidents({
   view,
   audience,
   visibleEventIds,
+  cutoffAt,
   onOpenShipment,
+  onRecordAction,
 }: {
   view: ShipmentView
   audience: Audience
   visibleEventIds: ReadonlySet<string>
+  cutoffAt: string
   onOpenShipment?: (id: string) => void
+  /** Operations only: records a recommended action of this shipment. */
+  onRecordAction?: RecordAction
 }) {
   if (!view.incidents.length) return null
   const legs = new Map(view.shipment.legs.map((leg) => [leg.id, leg]))
@@ -81,6 +88,9 @@ export function ShipmentIncidents({
             (incident.kind === 'customs' || incident.kind === 'hold') &&
             evidenceDocuments.length > 0 &&
             evidenceDocuments.every((document) => document.state === 'available')
+          const internal = audience === 'operations' && incident.condition === 'active'
+          const explanation = internal ? explainIncident(view, incident, cutoffAt) : null
+          const actions = view.recommendations.filter((action) => action.incidentId === incident.id)
           return (
             <li
               key={incident.id}
@@ -127,6 +137,12 @@ export function ShipmentIncidents({
                   </div>
                 )}
               </dl>
+              {explanation && (
+                <div className="incident-explanation">
+                  <p>{explanation.summary}</p>
+                  <p>{explanation.impact}</p>
+                </div>
+              )}
               {heldWithDocuments && (
                 <p className="incident-note">
                   Documentación disponible. La retención sigue activa hasta la liberación.
@@ -147,6 +163,9 @@ export function ShipmentIncidents({
                     </Button>
                   ))}
                 </div>
+              )}
+              {internal && onRecordAction && (
+                <IncidentActions actions={actions} onRecord={onRecordAction} />
               )}
             </li>
           )

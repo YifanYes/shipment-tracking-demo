@@ -29,7 +29,9 @@ import {
   timelineEntries,
   type Audience,
 } from '../lib/presentation'
+import { ShipmentActivity } from './shipment-activity'
 import { ShipmentDocuments } from './shipment-documents'
+import type { RecordAction } from './incident-actions'
 import { ShipmentEvents } from './shipment-events'
 import { ShipmentIncidents } from './shipment-incidents'
 import { ShipmentJourney } from './shipment-journey'
@@ -40,12 +42,16 @@ export function ShipmentDetail({
   audience,
   onBack,
   onOpenShipment,
+  onRecordAction,
+  actorName = (id) => id,
 }: {
   item: ShipmentView
   cutoffAt: string
   audience: Audience
   onBack: () => void
   onOpenShipment?: (id: string) => void
+  onRecordAction?: RecordAction
+  actorName?: (identityId: string) => string
 }) {
   const headingRef = useRef<HTMLHeadingElement>(null)
   const { shipment, projection, operators, account } = item
@@ -140,13 +146,16 @@ export function ShipmentDetail({
         view={item}
         audience={audience}
         visibleEventIds={visibleEventIds}
+        cutoffAt={cutoffAt}
         onOpenShipment={onOpenShipment}
+        onRecordAction={audience === 'operations' ? onRecordAction : undefined}
       />
 
       <div className="detail-body">
         <div className="detail-column">
           <ShipmentJourney view={item} />
           <ShipmentDocuments documents={item.documents} />
+          <ShipmentActivity view={item} audience={audience} actorName={actorName} />
         </div>
         <ShipmentEvents view={item} entries={entries} audience={audience} />
       </div>

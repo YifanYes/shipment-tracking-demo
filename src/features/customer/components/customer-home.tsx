@@ -1,4 +1,5 @@
 import { CheckCheck, ExternalLink, Package } from 'lucide-react'
+import { notificationsOf } from '@/domain/actions'
 import type { ShipmentView } from '@/domain/contracts'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
@@ -35,9 +36,36 @@ export function CustomerHome({
     )
   const upcoming = upcomingDeliveries(shipments)
   const recent = recentDeliveries(shipments)
+  const notices = notificationsOf(shipments)
+  const references = new Map(shipments.map((view) => [view.shipment.id, view.shipment.reference]))
 
   return (
     <div className="customer-home">
+      {notices.length > 0 && (
+        <section className="customer-section" aria-labelledby="customer-notices-title">
+          <h2 id="customer-notices-title">Avisos</h2>
+          <ul className="customer-notices">
+            {notices.map((notice) => (
+              <li key={notice.id}>
+                <article className="customer-notice">
+                  <div>
+                    <time dateTime={notice.createdAt}>{formatTime(notice.createdAt)}</time>
+                    <h3>{notice.title}</h3>
+                    <p>{notice.message}</p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onOpenShipment(notice.shipmentId)}
+                  >
+                    Abrir {references.get(notice.shipmentId)}
+                  </Button>
+                </article>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       <section className="customer-section" aria-labelledby="customer-upcoming-title">
         <h2 id="customer-upcoming-title">Próximas entregas</h2>
         {upcoming.length ? (

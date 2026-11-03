@@ -138,7 +138,7 @@ describe('cola de atención', () => {
 
   it('detalla las incidencias activas en lugar del motivo genérico', () => {
     expect(attentionLines(multimodal, cutoffAt)).toEqual([
-      { key: 'incident-multi-delay', label: 'Retraso', severity: 'high' },
+      { key: 'incident-multi-delay', label: 'Retraso', severity: 'high', attention: 'unreviewed' },
     ])
     const stale = {
       ...multimodal,

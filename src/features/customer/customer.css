@@ -133,3 +133,39 @@
   font-size: 13px;
   text-align: center;
 }
+.customer-notices {
+  display: grid;
+  gap: 10px;
+}
+.customer-notice {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 16px 18px;
+  background: white;
+  border: 1px solid var(--border);
+  border-left: 3px solid #5b8def;
+  border-radius: 12px;
+}
+.customer-notice > div {
+  display: grid;
+  gap: 4px;
+  flex: 1 1 260px;
+  min-width: 0;
+}
+.customer-notice time {
+  font-size: 10px;
+  color: #75849a;
+}
+.customer-notice h3 {
+  font-size: 13px;
+  font-weight: 600;
+  color: #22324a;
+}
+.customer-notice p {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #4b5b72;
+}

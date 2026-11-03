@@ -187,6 +187,8 @@ function view({
     ...(confirmed ? [confirmed.locationId] : []),
   ])
   return {
+    activity: [],
+    recommendations: [],
     shipment: {
       id,
       reference,

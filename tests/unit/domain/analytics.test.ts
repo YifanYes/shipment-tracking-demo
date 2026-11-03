@@ -43,11 +43,6 @@ describe('reporte logístico sobre un fixture conocido', () => {
       shipmentIds: [fx.d.id],
     })
     expect(metrics['site-pickup:site-madrid']).toMatchObject({ value: 2.3, sampleSize: 3 })
-    expect(metrics['site-pickup-open:site-zaragoza']).toMatchObject({
-      value: 100,
-      population: 'open',
-      shipmentIds: [fx.d.id],
-    })
     // One completed observation is below the minimum: the value is withheld, the sample kept.
     expect(metrics['site-pickup:site-zaragoza']).toMatchObject({ value: null, sampleSize: 1 })
     expect(metrics['port-dwell:port-valencia']).toMatchObject({
@@ -55,26 +50,21 @@ describe('reporte logístico sobre un fixture conocido', () => {
       sampleSize: 1,
       shipmentIds: [fx.e.id],
     })
-    expect(metrics['port-dwell-open:port-valencia']).toMatchObject({
-      value: 10,
-      sampleSize: 1,
-      shipmentIds: [fx.f.id],
-    })
     expect(metrics['customs-time:port-mersin']).toMatchObject({ value: null, sampleSize: 1 })
-    expect(result).toMatchObject({ generatedAt: reportCutoff, datasetRevision: 7, findings: [] })
-    expect(result.limitations).toContain(
-      '1 envíos sin eventos del operador; no aportan duraciones.',
-    )
+    expect(result).toMatchObject({ generatedAt: reportCutoff, datasetRevision: 7 })
+    expect(result.limitations).toContain('1 envío sin eventos del operador; no aportan duraciones.')
     expect(MIN_COMPLETED_SAMPLE).toBe(3)
   })
 
-  it('nunca mezcla esperas abiertas con duraciones completadas', () => {
-    for (const metric of report().metrics) {
-      expect(metric.id.includes('-open') || metric.id === 'overdue-open').toBe(
-        metric.population === 'open',
-      )
-      expect(metric.group).toBeTruthy()
-    }
+  it('las esperas por nodo solo cuentan hitos completados', () => {
+    const metrics = report().metrics
+    // Waits still open belong to the attention queue: only the overdue count describes now.
+    expect(metrics.filter((metric) => metric.population === 'open').map((m) => m.id)).toEqual([
+      'overdue-open',
+    ])
+    expect(new Set(metrics.map((metric) => metric.group))).toEqual(
+      new Set(['delays', 'ports', 'customs', 'sites']),
+    )
   })
 
   it('aplica periodo, centros y operadores', () => {
@@ -85,13 +75,9 @@ describe('reporte logístico sobre un fixture conocido', () => {
     const boreal = report({ operatorIds: ['operator-boreal'] })
     const ids = new Set(boreal.metrics.flatMap((metric) => metric.shipmentIds))
     expect([...ids].sort()).toEqual([fx.e.id, fx.f.id])
-    expect(
-      boreal.metrics.filter((metric) => metric.group === 'operators').map((m) => m.id),
-    ).toEqual(['operator-transit:operator-boreal'])
 
     // F was created at hour 70: a period ending at hour 60 leaves it out.
     const early = byId(report({ to: iso(60) }).metrics)
-    expect(early['port-dwell-open:port-valencia']).toBeUndefined()
     expect(early['overdue-open']).toMatchObject({ sampleSize: 1, shipmentIds: [fx.d.id] })
 
     expect(report({ from: iso(500), to: iso(600) }).limitations).toContain(

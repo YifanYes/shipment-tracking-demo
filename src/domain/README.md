@@ -14,7 +14,7 @@
 - `ShipmentProjection` se calcula desde las mismas entradas para mapa y paneles. Las animaciones no la modifican.
 - El documento aportado y la liberación aduanera requieren eventos distintos.
 - Las recomendaciones y reportes solo usarán evidencias visibles para la identidad activa.
-- `ReportMetric.value` será null cuando no exista muestra suficiente; las esperas abiertas se separan de duraciones completadas.
+- `ReportMetric.value` será null cuando no exista muestra suficiente. Solo `overdue-open` describe envíos en curso; el resto son duraciones completadas.
 - Cada reporte conservará su revisión del dataset y fecha de corte para detectar resultados que necesitan regenerarse.
 
 ## Contratos fijados al cerrar la fase 1
@@ -73,11 +73,32 @@ Las métricas históricas, las incidencias y el resto de adaptadores se implemen
 ### Métricas del reporte
 
 - Un envío entra en el periodo si se creó entre `from` y `to`. El filtro de operadores incluye envíos con algún tramo suyo. Las duraciones se calculan desde los eventos de cada vista.
-- Las duraciones completadas requieren 3 observaciones; las esperas abiertas (`-open`) se muestran desde 1 y miden hasta la fecha de corte.
+- Las duraciones completadas requieren 3 observaciones; `overdue-open` se muestra desde 1.
 - `delays`: `delayed-shipments`, `on-time-rate` y `average-delay` sobre entregados, y `overdue-open` sobre envíos en curso.
-- `legs`: `leg-duration:<modo>`, del primer hito confirmado a la finalización del tramo.
 - `ports`: `port-dwell:<puerto>`, de la entrada en terminal a la salida del buque.
 - `customs`: `customs-time:<puerto>`, de la declaración a la liberación.
 - `sites`: `site-pickup:<centro>`, de la creación a la recogida.
-- `operators`: `operator-transit:<operador>`, horas de movimiento por cada 100 km en línea recta, en tramos de al menos 50 km.
+- Las esperas aún abiertas en un nodo no se miden: pertenecen a la bandeja de atención. Tampoco hay duración por modo ni tránsito por operador: mezclaban rutas y modos sin llevar a una decisión.
 - `limitations` enumera envíos sin eventos, envíos con códigos pendientes y métricas sin muestra suficiente.
+
+## Contratos de la fase 3
+
+### Acciones e incidencias
+
+- `actions.ts` redacta con plantillas la explicación de cada incidencia activa (`explainIncident`: qué ha ocurrido e impacto) y sus acciones (`candidateActions`). Solo usan hechos de la vista autorizada.
+- Acciones por tipo: documento pendiente → aportar el documento; aduana o retención → avisar al cliente y pedir la fecha de liberación; retraso → avisar al cliente, y pedir nueva ETA si el operador no la ha comunicado; información sin actualizar → pedir posición y ETA. Son urgentes si la incidencia es de severidad alta o crítica. Su ID es estable: `action-<incidencia>-<tipo>`.
+- `ShipmentView.recommendations` contiene las acciones aún no registradas; `ShipmentView.activity`, las registradas hasta la fecha de corte. La atención de una incidencia es `unreviewed` sin registros, `handled` si todas sus acciones están registradas y `in_progress` en otro caso. La condición de la incidencia sigue dependiendo solo de los hechos.
+- `recordAction` solo registra una acción pendiente de una vista autorizada; repetirla no tiene efecto. El store exige además una identidad de operaciones. `applyActivity` aplica los registros una vez por ID: aportar un documento lo marca disponible en la fecha de corte, con su recurso estático, y aumenta `revision`. Avisos y solicitudes no cambian hechos físicos.
+- `DemoDataset.activity` guarda los registros. Los avisos al cliente (`notificationsOf`) se derivan de los registros `notify_customer` de las vistas visibles; el cliente no ve las solicitudes al operador.
+
+### Hallazgos del reporte
+
+- `findings.ts` redacta los hallazgos a partir de las métricas ya calculadas. Cada hallazgo enlaza sus métricas y, como evidencia, los envíos de esas métricas.
+- Cuellos de botella: en puertos, aduanas y centros, el grupo con mayor media se compara con la media ponderada del resto. Se informa si la supera 1,3 veces y en 4 horas o más; es urgente desde 2 veces. Incluye la muestra de ambos lados, una estimación de horas evitables con sus supuestos y, si los mismos operadores trabajan en ambos lados, que la diferencia no se les atribuye.
+- Solo hay hallazgos de cuellos de botella, como máximo `MAX_FINDINGS` (3): las entregas a tiempo y los envíos fuera de plazo ya son cifras del reporte. No se comparan operadores: con el histórico actual, sus diferencias también describen rutas.
+- Orden: urgentes primero y después por la proporción frente al resto.
+
+### Reloj y persistencia
+
+- `playing` avanza un paso cada `PLAY_STEP_MS` (5 s) con el mismo avance, aviso y final que el botón. Se detiene al terminar, al pausar, al reiniciar o al cambiar de identidad, y solo operaciones puede activarlo.
+- `store/persistence.ts` guarda en `localStorage` (`atlas-demo`, versión 1) la identidad, el paso, los registros de actividad y el estado de la sidebar. Al cargar, reconstruye el dataset desde la semilla, los eventos hasta ese paso y los registros. Una versión distinta, JSON inválido, una identidad o un paso desconocidos o un registro que no corresponde al dataset descartan el estado guardado. `resetDemo` guarda el estado inicial.

@@ -1,4 +1,4 @@
-import { RotateCcw, SkipForward } from 'lucide-react'
+import { Pause, Play, RotateCcw, SkipForward } from 'lucide-react'
 import { formatTime } from '@/shared/lib/format'
 import { Button } from '@/shared/ui/button'
 import type { WorkspaceView } from '@/store/workspace-store'
@@ -11,6 +11,8 @@ interface Props {
   onNavigate: (view: NavigationItem['id']) => void
   demoControls: {
     nextStep: { label: string; at: string } | null
+    playing: boolean
+    onTogglePlay: () => void
     onAdvance: () => void
     onReset: () => void
   } | null
@@ -50,6 +52,23 @@ export function Sidebar({ view, collapsed, items, onNavigate, demoControls }: Pr
       </nav>
       {demoControls && (
         <fieldset className="sidebar-footer" aria-label="Controles de demo">
+          <Button
+            variant="ghost"
+            className="sidebar-demo-button"
+            disabled={!demoControls.nextStep}
+            onClick={demoControls.onTogglePlay}
+            aria-label={demoControls.playing ? 'Pausar' : 'Reproducir'}
+            title={collapsed ? (demoControls.playing ? 'Pausar' : 'Reproducir') : undefined}
+          >
+            {demoControls.playing ? (
+              <Pause size={16} aria-hidden="true" />
+            ) : (
+              <Play size={16} aria-hidden="true" />
+            )}
+            <span className="sidebar-action-label">
+              {demoControls.playing ? 'Pausar' : 'Reproducir'}
+            </span>
+          </Button>
           <Button
             variant="outline"
             className="sidebar-demo-button"

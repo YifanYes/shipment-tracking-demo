@@ -33,7 +33,10 @@ export function Toaster({ children }: { children?: ReactNode }) {
     <Toast.Provider toastManager={toastManager} limit={3}>
       {children}
       <Toast.Portal>
-        <Toast.Viewport className="pointer-events-none fixed top-20 right-4 z-50 flex w-[min(360px,calc(100vw-2rem))] flex-col gap-2 outline-none">
+        <Toast.Viewport
+          aria-label="Notificaciones"
+          className="pointer-events-none fixed top-20 right-4 z-50 flex w-[min(360px,calc(100vw-2rem))] flex-col gap-2 outline-none"
+        >
           <ToastList />
         </Toast.Viewport>
       </Toast.Portal>

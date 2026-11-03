@@ -3,6 +3,7 @@ import { shipmentEvents } from './events'
 import { documentsOf, locationsById, trackShipment } from './projection'
 import { canViewShipment } from './visibility'
 import { attentionReasons } from './attention'
+import { withActions } from './actions'
 
 export interface TrackingState {
   dataset: DemoDataset
@@ -41,7 +42,7 @@ export function selectVisibleShipments(state: TrackingState): ShipmentView[] {
         locationIds.add(leg.destinationLocationId)
       }
       for (const event of events) if (event.locationId) locationIds.add(event.locationId)
-      return {
+      const view = {
         shipment,
         projection: track.projection,
         events,
@@ -55,6 +56,7 @@ export function selectVisibleShipments(state: TrackingState): ShipmentView[] {
         locations: dataset.locations.filter((location) => locationIds.has(location.id)),
         incidents: track.incidents,
       }
+      return { ...view, ...withActions(view, dataset, cutoffAt) }
     })
   byKey.set(key, views)
   return views

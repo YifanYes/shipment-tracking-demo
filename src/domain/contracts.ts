@@ -198,6 +198,10 @@ export interface ShipmentView {
   locations: readonly LogisticsLocation[]
   /** Active and cleared incidents derived from the visible events and documents. */
   incidents: readonly ShipmentIncident[]
+  /** Actions recorded in the demo for this shipment. Internal to operations. */
+  activity: readonly ActivityRecord[]
+  /** Proposed actions for active incidents that have not been recorded yet. */
+  recommendations: readonly RecommendedAction[]
 }
 
 export interface ShipmentSummary {
@@ -208,6 +212,7 @@ export interface ShipmentSummary {
 }
 
 export interface RecommendedAction {
+  /** Stable per incident and kind: `action-<incident>-<kind>`. */
   id: EntityId
   shipmentId: EntityId
   incidentId: EntityId
@@ -216,15 +221,26 @@ export interface RecommendedAction {
   explanation: string
   priority: 'normal' | 'urgent'
   evidence: readonly EvidenceReference[]
+  /** Synthetic recipient: the customer account, the operator or the customs agent. */
+  recipient: string
+  /** Draft prepared from templates. Notices and requests can be edited before recording. */
+  subject: string
+  message: string
+  documentId?: EntityId
 }
 
+/** A local action. Never changes physical facts; providing a document only marks it available. */
 export interface ActivityRecord {
   id: EntityId
+  actionId: EntityId
   shipmentId: EntityId
+  incidentId: EntityId
   actorIdentityId: EntityId
   action: RecommendedAction['kind']
   recordedAt: IsoDateTime
-  summary: string
+  recipient: string
+  subject: string
+  message: string
   documentId?: EntityId
 }
 
@@ -245,7 +261,7 @@ export interface AnalyticsFilters {
   operatorIds: readonly EntityId[]
 }
 
-export type ReportMetricGroup = 'delays' | 'legs' | 'ports' | 'customs' | 'sites' | 'operators'
+export type ReportMetricGroup = 'delays' | 'ports' | 'customs' | 'sites'
 
 export interface ReportMetric {
   id: EntityId
@@ -294,6 +310,8 @@ export interface DemoDataset {
   shipments: readonly Shipment[]
   events: readonly OperatorEvent[]
   documents: readonly ShipmentDocument[]
+  /** Actions recorded during the demo. Absent in a seed. */
+  activity?: readonly ActivityRecord[]
 }
 
 export interface ScheduledEvent {

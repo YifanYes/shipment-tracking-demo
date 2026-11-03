@@ -33,6 +33,13 @@ export interface AttentionLine {
   key: string
   label: string
   severity?: ShipmentIncident['severity']
+  attention?: ShipmentIncident['attention']
+}
+
+export const attentionStateLabels: Record<ShipmentIncident['attention'], string> = {
+  unreviewed: 'Sin revisar',
+  in_progress: 'En gestión',
+  handled: 'Atendida',
 }
 
 /**
@@ -45,6 +52,7 @@ export function attentionLines(item: ShipmentView, cutoffAt: string): AttentionL
     key: incident.id,
     label: incidentKindLabels[incident.kind],
     severity: incident.severity,
+    attention: incident.attention,
   }))
   for (const reason of attentionReasons(item, cutoffAt)) {
     if (reason === 'Incidencia pendiente' && incidents.length) continue
@@ -56,20 +64,22 @@ export function attentionLines(item: ShipmentView, cutoffAt: string): AttentionL
 }
 
 /**
- * Shipments that need attention, most severe active incident first, then by number of reasons and
- * nearest committed date.
+ * Shipments that need attention, most severe active incident first, then those with pending
+ * recommended actions, then by number of reasons and nearest committed date.
  */
 export function attentionQueue(shipments: readonly ShipmentView[], cutoffAt: string) {
   return shipments
     .map((item) => ({
       item,
       reasons: attentionReasons(item, cutoffAt).length,
+      pending: item.recommendations.length > 0,
       severity: Math.max(0, ...activeIncidents(item).map((entry) => severityRank[entry.severity])),
     }))
     .filter(({ reasons }) => reasons > 0)
     .sort(
       (a, b) =>
         b.severity - a.severity ||
+        Number(b.pending) - Number(a.pending) ||
         b.reasons - a.reasons ||
         Date.parse(a.item.shipment.committedDeliveryAt) -
           Date.parse(b.item.shipment.committedDeliveryAt) ||

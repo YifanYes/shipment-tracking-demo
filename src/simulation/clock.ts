@@ -47,3 +47,6 @@ export function nextDemoStep(
     ? { ...step, at: new Date(releaseAt(dataset, step.offsetMinutes)).toISOString() }
     : null
 }
+
+/** Pause between steps while the demo plays on its own. */
+export const PLAY_STEP_MS = 5000

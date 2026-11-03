@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import type { LogisticsReport, ReportMetric } from '@/domain/contracts'
+import type { LogisticsReport, ReportFinding, ReportMetric, ShipmentView } from '@/domain/contracts'
 import {
   formatMetricValue,
-  groupMetrics,
+  nodeWaits,
   isReportOutdated,
   madridDayStart,
   periodEnd,
@@ -38,15 +38,32 @@ describe('estructura del reporte', () => {
     )
   })
 
-  it('agrupa por dimensión sin mezclar hitos completados y esperas abiertas', () => {
-    const groups = groupMetrics([
-      metric('wait.customs.completed', 'customs', 'completed'),
-      metric('wait.customs.open', 'customs', 'open'),
-      metric('delay.rate', 'delays', 'completed'),
-      metric('wait.port.valencia', 'ports', 'completed'),
+  it('ordena las esperas por nodo y marca la del hallazgo', () => {
+    const view = {
+      locations: [
+        { id: 'port-valencia', name: 'Puerto de Valencia' },
+        { id: 'port-algeciras', name: 'Puerto de Algeciras' },
+      ],
+      origin: null,
+    } as unknown as ShipmentView
+    const groups = nodeWaits(
+      {
+        metrics: [
+          metric('delay.rate', 'delays', 'completed'),
+          { ...metric('port-dwell:port-algeciras', 'ports', 'completed'), value: 10 },
+          { ...metric('port-dwell:port-valencia', 'ports', 'completed'), value: 40 },
+          { ...metric('port-dwell:port-unknown', 'ports', 'completed'), value: null },
+        ],
+        findings: [{ metricIds: ['port-dwell:port-valencia'] } as unknown as ReportFinding],
+      },
+      [view],
+    )
+    expect(groups.map((group) => group.key)).toEqual(['ports'])
+    expect(groups[0]!.rows.map((row) => [row.name, row.share, row.flagged])).toEqual([
+      ['Puerto de Valencia', 1, true],
+      ['Puerto de Algeciras', 0.25, false],
+      ['port-dwell:port-unknown', 0, false],
     ])
-    expect(groups.map((group) => group.key)).toEqual(['delays', 'ports', 'customs'])
-    expect(groups[2]?.populations.map((entry) => entry.population)).toEqual(['completed', 'open'])
   })
 
   it('no inventa un valor cuando la muestra es insuficiente', () => {

@@ -124,6 +124,8 @@ export function makeView(input: ViewInput): ShipmentView {
   const documents = input.documents ?? []
   const incidents = input.incidents ?? []
   return {
+    activity: [],
+    recommendations: [],
     shipment: {
       id: input.id,
       reference: input.reference,

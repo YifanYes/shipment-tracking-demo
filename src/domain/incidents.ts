@@ -197,14 +197,26 @@ export function incidentsFromTimeline(input: IncidentInput): ShipmentIncident[] 
       evidence: [{ kind: 'operator_event', id: input.stale.evidenceEventId }],
     })
 
-  const customsActive = drafts.some((draft) => draft.kind === 'customs' && !draft.clearedAt)
+  const span = (draft: Draft): readonly [number, number] => [
+    Date.parse(draft.openedAt),
+    draft.clearedAt ? Date.parse(draft.clearedAt) : cutoff,
+  ]
+  /** A document blocks clearance when it was missing while the shipment was held at customs. */
+  const blocksCustoms = (document: Draft) => {
+    const [from, to] = span(document)
+    return drafts.some((draft) => {
+      if (draft.kind !== 'customs') return false
+      const [heldFrom, heldTo] = span(draft)
+      return heldFrom <= to && from <= heldTo
+    })
+  }
   return drafts
     .map((draft): ShipmentIncident => {
       const severity: ShipmentIncident['severity'] =
         draft.kind === 'customs'
           ? 'high'
           : draft.kind === 'missing_document'
-            ? customsActive && !draft.clearedAt
+            ? blocksCustoms(draft)
               ? 'high'
               : 'medium'
             : draft.kind === 'delay'

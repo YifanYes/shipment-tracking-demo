@@ -8,6 +8,8 @@ El alcance completo y el reparto del trabajo están en [IMPLEMENTATION_PLAN.md](
 
 Fases 0, 1 y 2 completadas. La fase 2 incorpora 174 envíos sintéticos (24 activos), cinco escenarios multimodales, incidencias, documentos, vistas de cliente y la estructura del reporte; el detalle está en `IMPLEMENTATION_PLAN.md`. Las pruebas del recorrido de la fase 1 usan `nationalSeed`.
 
+La fase 3 tiene implementados los pasos de la demo con reproducir, pausar, avanzar y reiniciar; acciones sobre incidencias (aportar documentos, avisar al cliente y pedir información al operador) con registro de actividad; avisos en la vista del cliente; hallazgos y recomendaciones del reporte, y persistencia versionada en `localStorage`. Revisada en navegador; falta la revisión manual.
+
 Fase 1: El primer recorrido incluye un envío nacional Madrid → Valencia, un selector de dos identidades, listado y detalle conectados con el mapa de ubicaciones confirmadas, y un evento reproducible de entrega.
 
 Las vistas tienen un título compacto en la barra superior. La sidebar se puede colapsar desde un control exterior y el logotipo SVG de Atlas se utiliza también como favicon. Los breadcrumbs se incorporarán en páginas con jerarquía, como el detalle de un envío.
@@ -22,7 +24,7 @@ La identidad de operaciones puede consultar el envío. El cliente de otra cuenta
 4. Cambiar a `Cliente · Levante Retail`. Desaparecen la selección y el envío ajeno, incluidos ruta y contadores. Volver a operaciones permite consultar la entrega desde el listado.
 5. Pulsar `Reiniciar` para restaurar los datos y el reloj iniciales.
 
-El estado vive en memoria. Recargar restaura el escenario y la identidad iniciales; la persistencia versionada corresponde a la fase 3. El listado tiene la ruta `/shipments` y el detalle `/shipments/shipment-es-001`. Se puede recargar un enlace directo y navegar con Atrás y Adelante. Los enlaces anteriores con `?shipment=shipment-es-001` redirigen a la nueva ruta. Los identificadores no autorizados se descartan con la identidad activa, también desde el historial.
+La identidad, el paso de la demo, las acciones registradas y el estado de la sidebar se guardan en `localStorage` (`atlas-demo`, versión 1) y se recuperan al recargar. Un estado guardado incompatible se descarta y la demo empieza desde el inicio. `Reiniciar` restaura el estado inicial. El listado tiene la ruta `/shipments` y el detalle `/shipments/shipment-es-001`. Se puede recargar un enlace directo y navegar con Atrás y Adelante. Los enlaces anteriores con `?shipment=shipment-es-001` redirigen a la nueva ruta. Los identificadores no autorizados se descartan con la identidad activa, también desde el historial.
 
 El mapa muestra la última ubicación confirmada por un evento del operador, sin interpolar una posición del vehículo. ATL-ES-001 empieza en la A-3, a la altura de Perales de Tajuña, con una posición sintética incluida en su evento `ON_ROUTE`. Mapa, lista y detalle consumen esa misma ubicación y conservan su fuente y fecha. Las coordenadas del escenario son referencias de la demo, no un seguimiento GPS real. La fecha comprometida y la ETA también se muestran por separado. Las horas de la interfaz usan `Europe/Madrid`.
 
@@ -73,7 +75,7 @@ El hook `pre-commit` ejecuta `pnpm lint` y `pnpm format:check` sobre el proyecto
 | src/domain/             | Contratos y reglas: visibilidad, eventos, proyección y atención     |
 | src/data/scenarios/     | Dataset sintético, escenario nacional y trazados de rutas           |
 | src/simulation/         | Avance del escenario e incorporación de eventos                     |
-| src/store/              | Dataset, reloj, identidad y selección con Zustand                   |
+| src/store/              | Dataset, reloj, identidad, selección y persistencia con Zustand     |
 | src/features/overview/  | Métricas, mapa operativo, selección y panel de atención             |
 | src/features/shipments/ | Listado, detalle y presentación del seguimiento                     |
 | src/shared/             | Componentes shadcn/ui, formato de fechas y estados, utilidades      |
