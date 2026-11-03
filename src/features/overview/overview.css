@@ -321,26 +321,17 @@
 .map-cluster {
   display: grid;
   place-items: center;
-  gap: 2px;
-  padding: 10px;
-  min-width: 43px;
-  min-height: 43px;
+  width: 32px;
+  height: 32px;
   border: 2px solid currentColor;
   border-radius: 50%;
   background: white;
+  font-size: 13px;
+  font-weight: 650;
   box-shadow:
     0 0 0 5px #ffffff80,
     0 3px 12px #34486220;
   cursor: pointer;
-}
-.map-cluster strong {
-  font-size: 14px;
-}
-.map-cluster small {
-  font-size: 10px;
-}
-.map-cluster:has(small) {
-  border-radius: 12px;
 }
 .map-basemap-note {
   position: absolute;

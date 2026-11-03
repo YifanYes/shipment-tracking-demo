@@ -559,8 +559,7 @@ export default function LogisticsMap({
                 aria-label={`${marker.count} envíos agrupados, ${marker.attention} requieren atención. Ampliar zona`}
                 onClick={() => void expandCluster(marker)}
               >
-                <strong>{marker.count}</strong>
-                {marker.attention > 0 && <small>{marker.attention} con atención</small>}
+                {marker.count}
               </button>,
               marker.element,
               marker.key,
