@@ -29,7 +29,8 @@ export function updateAge(confirmedAt: string | undefined, cutoffAt: string) {
   if (minutes < 60) return `Actualizado hace ${minutes} min`
   const hours = Math.floor(minutes / 60)
   if (hours < 24) return `Actualizado hace ${hours} h`
-  return `Actualizado hace ${Math.floor(hours / 24)} días`
+  const days = Math.floor(hours / 24)
+  return `Actualizado hace ${days} ${days === 1 ? 'día' : 'días'}`
 }
 
 export const incidentKindLabels: Record<IncidentKind, string> = {

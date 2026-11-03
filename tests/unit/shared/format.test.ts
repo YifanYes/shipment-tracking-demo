@@ -8,5 +8,8 @@ describe('formato de presentación', () => {
       'Actualizado hace 1 min',
     )
     expect(updateAge(undefined, cutoffAt)).toBe('Sin ubicación confirmada')
+    expect(updateAge('2026-10-30T10:00:00.000Z', '2026-10-31T11:00:00.000Z')).toBe(
+      'Actualizado hace 1 día',
+    )
   })
 })

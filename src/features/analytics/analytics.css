@@ -25,7 +25,7 @@
   margin-bottom: 6px;
   font-size: 11px;
   font-weight: 550;
-  color: #67768c;
+  color: #5b6980;
 }
 .analytics-filter legend + * {
   clear: both;
@@ -34,7 +34,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #67768c;
+  color: #5b6980;
 }
 .analytics-period input {
   height: 32px;
@@ -71,9 +71,10 @@
 .analytics-chip[aria-pressed='true'] {
   border-color: var(--primary);
   background: color-mix(in srgb, var(--primary) 10%, white);
-  color: var(--primary);
+  color: #3a5bd0;
   font-weight: 550;
 }
+.analytics-period input::-webkit-calendar-picker-indicator:focus-visible,
 .analytics-period input:focus-visible,
 .analytics-chip:focus-visible {
   outline: 2px solid var(--ring);
@@ -134,7 +135,7 @@
 .report-meta {
   margin-top: 4px;
   font-size: 11px;
-  color: #75849a;
+  color: #5b6980;
   overflow-wrap: anywhere;
 }
 .report-outdated {
@@ -178,7 +179,7 @@
 .report-kpi-label {
   font-size: 11px;
   font-weight: 550;
-  color: #67768c;
+  color: #5b6980;
 }
 .report-kpi strong {
   font-size: 24px;
@@ -191,11 +192,11 @@
 }
 .report-kpi[data-empty='true'] strong {
   font-size: 14px;
-  color: #a46512;
+  color: #935c11;
 }
 .report-kpi-detail {
   font-size: 11px;
-  color: #75849a;
+  color: #5b6980;
 }
 
 /* Findings */
@@ -210,7 +211,7 @@
   padding: 12px 16px;
   font-size: 12px;
   line-height: 1.5;
-  color: #67768c;
+  color: #5b6980;
   min-width: 0;
   overflow-wrap: anywhere;
 }
@@ -265,7 +266,7 @@
   list-style: disc;
   font-size: 11px;
   line-height: 1.6;
-  color: #67768c;
+  color: #5b6980;
 }
 
 /* Waits per node */
@@ -279,7 +280,7 @@
   padding: 0 8px 6px;
   font-size: 10px;
   font-weight: 550;
-  color: #75849a;
+  color: #5b6980;
   text-align: left;
 }
 .report-nodes th,
@@ -303,7 +304,7 @@
   padding-top: 12px;
   font-size: 11px;
   font-weight: 600;
-  color: #67768c;
+  color: #5b6980;
   border-bottom: 1px solid var(--border);
 }
 .report-nodes tr[data-flagged='true'] th,
@@ -313,7 +314,7 @@
 }
 .report-nodes td[data-empty='true'] {
   font-size: 11px;
-  color: #a46512;
+  color: #935c11;
 }
 .report-bar-cell {
   width: 45%;
@@ -330,7 +331,7 @@
 }
 .report-empty {
   font-size: 12px;
-  color: #67768c;
+  color: #5b6980;
 }
 
 /* Loading */
@@ -349,7 +350,7 @@
   color: #344862;
 }
 .report-steps li[data-state='pending'] {
-  color: #a3aebe;
+  color: #5b6980;
 }
 .report-steps li[data-state='done'] svg {
   color: #2f8a5b;

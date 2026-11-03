@@ -8,9 +8,15 @@ export default function LogisticsMapMock({
   selectedSiteId,
   onSelect,
   onSiteSelect,
+  onClusterSelect,
 }: LogisticsMapProps) {
   return (
     <div data-testid="map">
+      {shipments.length > 0 && (
+        <button onClick={() => onClusterSelect(shipments.slice(0, 1).map((s) => s.shipment.id))}>
+          Abrir agrupación
+        </button>
+      )}
       {sites.map((site) => (
         <button
           key={site.id}

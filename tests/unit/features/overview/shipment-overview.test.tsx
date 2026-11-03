@@ -48,11 +48,32 @@ afterEach(async () => {
 })
 
 describe('vista general multimodal', () => {
+  it('una agrupación entregada deja de filtrar la lista', async () => {
+    await click('Abrir agrupación')
+    expect(document.activeElement?.className).toContain('map-shipment-list')
+    expect(text('.map-shipment-row')).toHaveLength(1)
+    const [first] = mapShipments.filter((item) => item.projection.lifecycle !== 'delivered')
+    await act(async () => {
+      root.render(
+        <ShipmentOverview
+          shipments={mapShipments.filter((item) => item !== first)}
+          cutoffAt={mapCutoffAt}
+          onOpenShipment={onOpenShipment}
+        />,
+      )
+    })
+    expect(text('.map-shipment-row')).toHaveLength(3)
+    expect(container.querySelector('.map-list-heading')).toBeNull()
+  })
+
   it('excluye el histórico del mapa y ordena la atención por gravedad', () => {
     expect(container.querySelector('.map-shipment-count')?.textContent).toBe('4')
     expect(text('.map-shipment-row').join()).not.toContain('ATL-ES-090')
     expect(text('.attention-item strong')).toEqual(['ATL-MM-002', 'ATL-MM-001'])
-    expect(text('.attention-item li')).toEqual(['Retenido en aduana · crítica', 'Retraso · alta'])
+    expect(text('.attention-lines > span')).toEqual([
+      'Retenido en aduana · crítica',
+      'Retraso · alta',
+    ])
     expect(container.querySelector('.map-legend')?.textContent).toContain('Marítimo')
     expect(container.querySelector('.map-legend')?.textContent).toContain('Puerto')
   })

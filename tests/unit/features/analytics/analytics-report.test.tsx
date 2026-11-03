@@ -118,7 +118,7 @@ describe('reporte de análisis logístico', () => {
       const loading = container.querySelector('.report-loading')!
       expect(loading.getAttribute('aria-busy')).toBe('true')
       expect(loading.textContent).toMatch(/Consultando eventos de \d+ envíos/)
-      expect(buttonByText(container, 'Generar reporte')?.disabled).toBe(true)
+      expect(buttonByText(container, 'Generar reporte')?.getAttribute('aria-disabled')).toBe('true')
       act(() => {
         vi.advanceTimersByTime(1800)
       })

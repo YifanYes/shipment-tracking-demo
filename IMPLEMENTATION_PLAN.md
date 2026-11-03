@@ -332,7 +332,7 @@ La prioridad es demostrar seguimiento multimodal, confianza en la información, 
 - [x] Fase 1 completada.
 - [x] Fase 2 completada.
 - [x] Fase 3 completada.
-- [ ] Fase 4 completada.
+- [x] Fase 4 completada.
 - [ ] Fase 5 completada.
 
 ### Resultado de la fase 0
@@ -422,11 +422,11 @@ No se añaden dependencias. Continúan los avisos conocidos de `THREE.Clock` y t
 
 ### Siguiente trabajo
 
-Continuar con la fase 4, la revisión independiente.
+Continuar con la fase 5, publicación y entrega.
 
-Leer primero este plan, `README.md` y `src/domain/README.md`. Conservar los recorridos de las fases 1 y 2, los pasos de la demo y sus pruebas.
+Leer primero este plan, `README.md` y `src/domain/README.md`. Conservar los recorridos de las fases anteriores, los pasos de la demo y sus pruebas.
 
-El documento permite continuar en este chat o abrir uno nuevo sin reconstruir las decisiones de la conversación. Si se cambia de chat, pedir: "Lee IMPLEMENTATION_PLAN.md, README.md y src/domain/README.md. Continúa con la fase 4, manteniendo el alcance acordado".
+El documento permite continuar en este chat o abrir uno nuevo sin reconstruir las decisiones de la conversación. Si se cambia de chat, pedir: "Lee IMPLEMENTATION_PLAN.md, README.md y src/domain/README.md. Continúa con la fase 5, manteniendo el alcance acordado".
 
 ## Cambio de la vista general: mapa operativo
 
@@ -503,3 +503,56 @@ Revisión en navegador del 3 de noviembre de 2026 sobre el build de producción,
 Simplificación del reporte tras la revisión: el reporte muestra tres cifras (entregas a tiempo, en curso fuera de plazo y retraso medio), hasta tres hallazgos de cuellos de botella en lista, con supuestos, limitaciones y envíos plegados en "Detalle", y una tabla de esperas por nodo con barras y el nodo del hallazgo marcado. Se retiran del dominio la duración de tramos por modo, el tránsito por operador y las esperas abiertas por nodo, y los hallazgos de entregas a tiempo, fuera de plazo y despacho pendiente, que repetían cifras o la bandeja. Los filtros pasan a chips con "Todos" y la generación muestra durante 1,8 s los pasos de la consulta y un esqueleto, sin animación con movimiento reducido. Revisado en navegador a 1280 × 800 y 390 × 844.
 
 Fase cerrada a petición del usuario. Los avisos solo siguen en el inicio del cliente mientras su incidencia está activa; en el detalle del envío se conservan como historial. Siguen pendientes de fases posteriores el tamaño del fragmento de MapLibre y del dataset y los filtros del listado que se reinician al volver del detalle.
+
+## Resultado de la fase 4
+
+Revisión del 3 de noviembre de 2026. Un subagente de QA recorrió el build de producción con Chromium 145 (Playwright, WebGL por software) y axe-core 4.10, sin acceso de escritura al código. El agente principal corrigió los problemas y repitió las comprobaciones en navegador. No hubo bloqueantes en los recorridos normales; sí 8 hallazgos materiales y 14 menores.
+
+| Hallazgo material                                                   | Corrección                                                                                                  | Comprobación                                                                |
+| ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| Fallo del fragmento del mapa: aplicación en blanco                  | `ErrorBoundary` alrededor del mapa y de la aplicación                                                       | Fragmento bloqueado: aviso, 24 filas y bandeja; `/shipments` no lo necesita |
+| El aviso de un paso seguía abierto para otra identidad              | Cambiar de identidad cierra los avisos                                                                      | Con Levante Retail no queda el aviso de ATL-IT-003                          |
+| Envío entregado "retenido en aduana", retraso atribuido al operador | Lo resuelto se explica en pasado; un compromiso vencido no se atribuye al operador                          | ATL-TR-004 final, operaciones y cliente                                     |
+| "Sin noticias desde" usaba la fecha del umbral                      | Fecha y horas del último evento, también en la solicitud al operador                                        | ATL-ES-005: 30 oct, 12:00 (23 h)                                            |
+| Foco perdido en `<body>`                                            | Destino definido al navegar, registrar acciones, generar el reporte, cerrar la ficha y abrir una agrupación | Elemento activo medido en cada caso                                         |
+| Contraste bajo AA en texto pequeño                                  | Grises, azul y ámbar de texto oscurecidos                                                                   | axe: 0 infracciones en las 9 pantallas revisadas (antes hasta 103 nodos)    |
+| Desbordamiento horizontal a 320 px                                  | Controles de demo con salto de línea                                                                        | `scrollWidth` 320 y 390, también con aviso                                  |
+| "Localizar envío" sin respuesta visible en móvil                    | La ficha entra en pantalla y se anuncia la selección                                                        | Ficha completa a 320, 390 y 1280 px                                         |
+
+Menores corregidos: enlaces directos sin descargar el mapa; reporte, filtros y listado conservados al volver de un detalle, con `Volver al reporte`; referencias ajenas fuera del control de demo; "1 día"; contador del listado según los filtros; agrupación entregada sin lista vacía; registros de `localStorage` validados reproduciendo `recordAction`; `removeItem` bloqueado sin pantalla en blanco; eventos con fecha inválida ignorados; scroll al inicio al cambiar de página o identidad; nombres accesibles en español y concordancia; `Saltar el mapa`; foco visible en el selector de fecha; leyenda oculta sin mapa; HTML válido en la bandeja y la ficha; retirados "CONTROL LOGÍSTICO", el contador repetido de la bandeja y la referencia repetida del detalle; "Sin previsión" como único texto para la ETA ausente.
+
+Sin cambios tras repetir las comprobaciones: los pasos de la demo coinciden con el dominio y terminan solo con el documento de ATL-TR-004; el reporte coincide con un recálculo independiente en sus combinaciones de filtros; el perímetro se mantiene en las cinco identidades; sin WebGL y sin teselas la aplicación sigue siendo útil; las variantes de `localStorage` incompatible arrancan sin errores; movimiento reducido correcto.
+
+Verificación final: `pnpm check`, `pnpm test` (27 archivos, 133 pruebas) y `pnpm build` correctos; consola sin errores en los recorridos normales.
+
+### Rendimiento medido
+
+Build de producción en `vite preview`, localhost, Apple M3 Pro, Chromium headless con WebGL por software. Medianas de 7 cargas; interacción del clic al segundo fotograma.
+
+| Carga (ms)       | Sin limitar | CPU 4x |
+| ---------------- | ----------- | ------ |
+| DOMContentLoaded | 48          | 137    |
+| FCP y LCP        | 140         | 348    |
+| Bloqueo total    | 1           | 6      |
+| Mapa listo       | 924         | 1.312  |
+
+| Interacción (ms)     | Sin limitar | CPU 4x |
+| -------------------- | ----------- | ------ |
+| Avanzar paso         | 20          | 46     |
+| Seleccionar marcador | 19          | 32     |
+| Buscar en el listado | 13          | 25     |
+| Cambiar de identidad | 83          | 102    |
+| Abrir el listado     | 60          | 99     |
+| Abrir detalle        | 9           | 28     |
+| Generar reporte\*    | 21          | 33     |
+
+\* Sin los 1,8 s de espera deliberada. Transferencia con gzip: 558 kB propios y unos 111 kB de teselas, más el worker (147 kB) y `map-land.geojson` (95 kB), calculados. Antes de corregir, con 1,6 Mbps y 150 ms de latencia, el mapa tardaba unos 6,9 s; esa medida no se repitió. Localhost no representa la red de Vercel.
+
+### Limitaciones documentadas
+
+- Sin comprobar: lector de pantalla real, Safari, Firefox, táctil real, GPU real y salida de pantalla completa con Escape.
+- Teclado: `Saltar el mapa` evita las paradas del mapa, pero la bandeja sigue tras las filas de la lista. La trampa de foco del diálogo perdió el foco con Tab cada 40 ms o menos en 2 de 3 ejecuciones y se mantuvo a 80 ms; es una sospecha sin efecto observado a velocidad humana.
+- Contraste: axe cubre el texto de las pantallas revisadas, no el color de las rutas ni los iconos. Se mantiene texto de 9 y 10 px por densidad de la interfaz.
+- Dominio, no alcanzable con los datos actuales: una entrega sin `CUSTOMS_RELEASED` deja el envío entregado con la incidencia de aduana activa, y un aviso de retraso con ETA en plazo no deja incidencia.
+- Textos: el mensaje original del operador se conserva aunque repita el título del evento; conviven "ETA" y "Llegada prevista"; la cronología del cliente describe cada evento en presente con su fecha; "Muestra insuficiente" convive con "Ver envíos (1)" en periodos cortos.
+- Solo frontend: `/documents/*.html` responde por URL directa y el dataset completo va en el fragmento principal, de unos 650 kB sin comprimir. El aviso de tamaño del build sigue activo, también por MapLibre.

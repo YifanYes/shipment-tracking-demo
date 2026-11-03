@@ -27,7 +27,6 @@ export function Sidebar({ view, collapsed, items, onNavigate, demoControls }: Pr
           <span className="brand-wordmark">Atlas</span>
         </div>
       </div>
-      <div className="workspace-label">CONTROL LOGÍSTICO</div>
       <nav id="workspace-navigation" className="navigation" aria-label="Navegación">
         {items.map(({ id, label, icon: Icon }) => (
           <Button
@@ -55,6 +54,7 @@ export function Sidebar({ view, collapsed, items, onNavigate, demoControls }: Pr
           <Button
             variant="ghost"
             className="sidebar-demo-button"
+            focusableWhenDisabled
             disabled={!demoControls.nextStep}
             onClick={demoControls.onTogglePlay}
             aria-label={demoControls.playing ? 'Pausar' : 'Reproducir'}
@@ -72,6 +72,7 @@ export function Sidebar({ view, collapsed, items, onNavigate, demoControls }: Pr
           <Button
             variant="outline"
             className="sidebar-demo-button"
+            focusableWhenDisabled
             disabled={!demoControls.nextStep}
             onClick={demoControls.onAdvance}
             aria-label={

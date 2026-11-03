@@ -51,7 +51,7 @@
 .customer-card-heading p {
   margin-top: 4px;
   font-size: 11px;
-  color: #67768c;
+  color: #5b6980;
   overflow-wrap: anywhere;
 }
 .customer-status {
@@ -64,7 +64,7 @@
 }
 .customer-dates dt {
   font-size: 10px;
-  color: #75849a;
+  color: #5b6980;
 }
 .customer-dates dd {
   margin-top: 3px;
@@ -74,7 +74,7 @@
 }
 .customer-note {
   font-size: 11px;
-  color: #67768c;
+  color: #5b6980;
   line-height: 1.6;
 }
 .customer-delay {
@@ -100,10 +100,10 @@
   color: #286650;
 }
 .customer-delivered > span {
-  color: #67768c;
+  color: #5b6980;
 }
 .customer-card[data-late='true'] .customer-delivered > span {
-  color: #a46512;
+  color: #935c11;
 }
 .customer-documents {
   display: flex;
@@ -129,7 +129,7 @@
   background: white;
   border: 1px solid var(--border);
   border-radius: 12px;
-  color: #67768c;
+  color: #5b6980;
   font-size: 13px;
   text-align: center;
 }
@@ -157,7 +157,7 @@
 }
 .customer-notice time {
   font-size: 10px;
-  color: #75849a;
+  color: #5b6980;
 }
 .customer-notice h3 {
   font-size: 13px;

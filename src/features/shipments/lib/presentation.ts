@@ -60,6 +60,19 @@ const customerIncidentText: Record<IncidentKind, string> = {
   missing_document: 'Falta documentación del envío.',
 }
 
+const pastIncidentText: Partial<Record<IncidentKind, string>> = {
+  hold: 'Estuvo retenido.',
+  customs: 'Estuvo retenido en aduana.',
+  missing_document: 'Faltó documentación del envío.',
+}
+
+const incidentText = (incident: ShipmentIncident) => {
+  if (incident.condition === 'cleared') return pastIncidentText[incident.kind]
+  return incident.kind === 'delay' && incident.id.endsWith('-overdue')
+    ? 'Ha pasado la fecha comprometida sin confirmar la entrega.'
+    : customerIncidentText[incident.kind]
+}
+
 /** Distinct modes in leg order, e.g. "Carretera + Mar". */
 export function legModesLabel(view: ShipmentView) {
   return [...new Set(sortedLegs(view).map((leg) => modeLabels[leg.mode]))].join(' + ')
@@ -165,7 +178,7 @@ export function expectedArrival(eta: ArrivalEstimate): string | null {
 export function etaValue(eta: ArrivalEstimate) {
   if (eta.kind === 'operator') return formatTime(eta.arrivalAt)
   if (eta.kind === 'estimate') return `${formatTime(eta.earliestAt)} – ${formatTime(eta.latestAt)}`
-  return 'Información insuficiente'
+  return 'Sin previsión'
 }
 
 export const etaKindLabels: Record<ArrivalEstimate['kind'], string> = {
@@ -232,7 +245,11 @@ export function delayExplanation(view: ShipmentView): string[] {
   const relevant =
     view.projection.lifecycle === 'delivered' ? view.incidents : activeIncidents(view)
   const reasons = [
-    ...new Set(sortIncidents(relevant).map((item) => customerIncidentText[item.kind])),
+    ...new Set(
+      sortIncidents(relevant)
+        .map(incidentText)
+        .filter((text): text is string => Boolean(text)),
+    ),
   ]
   const latest = etaChanges(view).at(-1)
   if (latest?.previousAt) {

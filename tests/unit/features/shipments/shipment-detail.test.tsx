@@ -53,7 +53,7 @@ describe('detalle del envío', () => {
 
   it('indica información insuficiente sin ETA y la fecha comprometida superada', () => {
     const facts = render(staleUnknown, 'operations').querySelector('.detail-facts')!
-    expect(facts.textContent).toContain('Información insuficiente')
+    expect(facts.textContent).toContain('Sin previsión')
     expect(facts.textContent).toContain('Sin ETA del operador en las últimas 24 h.')
     expect(facts.textContent).toContain('Fecha comprometida superada hace 2 h')
   })

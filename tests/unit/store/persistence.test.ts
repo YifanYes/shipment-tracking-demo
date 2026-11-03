@@ -77,6 +77,38 @@ describe('persistencia versionada', () => {
       expect(storage.getItem(STORAGE_KEY)).toBeNull()
     }
   })
+
+  it('descarta registros que la regla de acciones no habría producido', () => {
+    const storage = memoryStorage()
+    const store = createWorkspaceStore(demoSeed, { storage })
+    store.getState().setIdentity('operations-network')
+    const notify = tr004(store).recommendations.find((item) => item.kind === 'notify_customer')!
+    store.getState().recordAction('shipment-tr-004', notify.id, 'Mensaje editado')
+    const snapshot = JSON.parse(storage.getItem(STORAGE_KEY)!)
+    const record = snapshot.activity[0]
+    expect(createWorkspaceStore(demoSeed, { storage }).getState().dataset.activity).toHaveLength(1)
+    for (const activity of [
+      [{ ...record, actionId: 'action-invented' }],
+      [{ ...record, incidentId: 'incident-invented' }],
+      [{ ...record, recipient: 'Otra cuenta' }],
+      [{ ...record, actorIdentityId: 'customer-levante' }],
+      [record, record],
+    ]) {
+      const raw = JSON.stringify({ ...snapshot, activity })
+      const restored = createWorkspaceStore(demoSeed, {
+        storage: memoryStorage({ [STORAGE_KEY]: raw }),
+      })
+      expect(restored.getState().dataset).toBe(demoSeed.dataset)
+    }
+  })
+
+  it('arranca aunque el almacenamiento no permita borrar un estado inválido', () => {
+    const storage = memoryStorage({ [STORAGE_KEY]: '{no es json' })
+    storage.removeItem = () => {
+      throw new Error('bloqueado')
+    }
+    expect(createWorkspaceStore(demoSeed, { storage }).getState().dataset).toBe(demoSeed.dataset)
+  })
 })
 
 describe('reproducción', () => {

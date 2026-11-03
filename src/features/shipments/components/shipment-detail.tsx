@@ -1,14 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react'
-import {
-  ArrowLeft,
-  CalendarDays,
-  CheckCheck,
-  ChevronRight,
-  Clock3,
-  MapPin,
-  Ship,
-  Truck,
-} from 'lucide-react'
+import { ArrowLeft, CalendarDays, CheckCheck, Clock3, MapPin, Ship, Truck } from 'lucide-react'
 import type { ShipmentView } from '@/domain/contracts'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
@@ -40,6 +31,7 @@ export function ShipmentDetail({
   item,
   cutoffAt,
   audience,
+  backLabel = 'Volver a envíos',
   onBack,
   onOpenShipment,
   onRecordAction,
@@ -48,6 +40,7 @@ export function ShipmentDetail({
   item: ShipmentView
   cutoffAt: string
   audience: Audience
+  backLabel?: string
   onBack: () => void
   onOpenShipment?: (id: string) => void
   onRecordAction?: RecordAction
@@ -69,10 +62,8 @@ export function ShipmentDetail({
       <nav className="detail-breadcrumb" aria-label="Ruta de navegación">
         <Button variant="ghost" size="sm" onClick={onBack}>
           <ArrowLeft size={14} aria-hidden="true" />
-          Volver a envíos
+          {backLabel}
         </Button>
-        <ChevronRight size={13} aria-hidden="true" />
-        <span aria-current="page">{shipment.reference}</span>
       </nav>
 
       <div className="detail-heading">

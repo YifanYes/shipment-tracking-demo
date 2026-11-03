@@ -36,6 +36,7 @@ const markers = () =>
 
 beforeEach(() => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true })
+  window.scrollTo = () => {}
   useWorkspaceStore.setState({ seed: demoSeed })
   useWorkspaceStore.getState().setIdentity('operations-madrid')
   useWorkspaceStore.getState().resetDemo()
@@ -125,8 +126,42 @@ describe('demo completa', () => {
     )
     await act(async () => useWorkspaceStore.getState().setIdentity('operations-madrid'))
     await advance()
-    expect(document.body.textContent).toContain('Retraso marítimo de ATL-IT-003')
+    expect(document.body.textContent).toContain('Paso completado')
+    expect(document.body.textContent).not.toContain('ATL-IT-003')
+    expect(document.body.textContent).not.toContain('ATL\u2011IT\u2011003')
     expect(document.body.textContent).not.toContain('Naviera Boreal')
+  })
+
+  it('cambiar de identidad cierra los avisos del paso anterior', async () => {
+    useWorkspaceStore.getState().setIdentity('operations-network')
+    await mount()
+    await act(async () =>
+      container.querySelector<HTMLButtonElement>('button[aria-label^="Siguiente paso"]')!.click(),
+    )
+    expect(document.body.textContent).toContain('ATL-IT-003 llegará tarde')
+    await setIdentity('customer-levante')
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 300))
+    })
+    expect(document.body.textContent).not.toContain('ATL-IT-003')
+  })
+
+  it('volver de un envío abierto desde el reporte conserva el reporte', async () => {
+    useWorkspaceStore.getState().setIdentity('operations-network')
+    window.history.replaceState(null, '', '/analytics')
+    await mount()
+    await act(async () => {
+      useWorkspaceStore.getState().selectShipment('shipment-tr-004')
+    })
+    const back = [...container.querySelectorAll('button')].find(
+      (item) => item.textContent === 'Volver al reporte',
+    )!
+    expect(
+      container.querySelector<HTMLElement>('.analytics-report')?.closest('[hidden]'),
+    ).not.toBeNull()
+    await act(async () => back.click())
+    expect(window.location.pathname).toBe('/analytics')
+    expect(container.querySelector('.analytics-report')?.closest('[hidden]')).toBeNull()
   })
 
   it('una incidencia recorre bandeja, detalle, acciones y aviso del cliente', async () => {
@@ -205,7 +240,7 @@ describe('demo completa', () => {
       await act(async () => button('Reproducir').click())
       for (let step = 0; step < demoSeed.steps.length; step++)
         await act(async () => vi.advanceTimersByTime(PLAY_STEP_MS))
-      expect(button('Demo completada').disabled).toBe(true)
+      expect(button('Demo completada').getAttribute('aria-disabled')).toBe('true')
       expect(useWorkspaceStore.getState().playing).toBe(false)
     } finally {
       vi.useRealTimers()

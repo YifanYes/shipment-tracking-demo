@@ -10,33 +10,40 @@ function workspacePath(state: WorkspaceState) {
   return '/'
 }
 
-/** Browser history and direct links use the same permission-checked store actions. */
+/**
+ * Apply the URL through the same permission-checked store actions as any navigation.
+ * Called before the first render too, so a direct link does not load another view first.
+ */
+export function syncWorkspaceWithLocation() {
+  const url = new URL(window.location.href)
+  const match = /^\/shipments\/([^/]+)\/?$/.exec(url.pathname)
+  let shipmentId = url.searchParams.get('shipment')
+  if (match?.[1]) {
+    try {
+      shipmentId = decodeURIComponent(match[1])
+    } catch {
+      shipmentId = null
+    }
+  }
+  const store = useWorkspaceStore.getState()
+  store.setView(
+    url.pathname === '/analytics'
+      ? 'analytics'
+      : url.pathname.startsWith('/shipments') || shipmentId
+        ? 'shipments'
+        : 'overview',
+  )
+  if (shipmentId) store.selectShipment(shipmentId)
+  // Replace invalid or legacy links rather than leaving an inaccessible detail URL.
+  window.history.replaceState(null, '', workspacePath(useWorkspaceStore.getState()))
+}
+
 export function useWorkspaceNavigation() {
   useEffect(() => {
     let readingLocation = false
     const readLocation = () => {
       readingLocation = true
-      const url = new URL(window.location.href)
-      const match = /^\/shipments\/([^/]+)\/?$/.exec(url.pathname)
-      let shipmentId = url.searchParams.get('shipment')
-      if (match?.[1]) {
-        try {
-          shipmentId = decodeURIComponent(match[1])
-        } catch {
-          shipmentId = null
-        }
-      }
-      const store = useWorkspaceStore.getState()
-      store.setView(
-        url.pathname === '/analytics'
-          ? 'analytics'
-          : url.pathname.startsWith('/shipments') || shipmentId
-            ? 'shipments'
-            : 'overview',
-      )
-      if (shipmentId) store.selectShipment(shipmentId)
-      // Replace invalid or legacy links rather than leaving an inaccessible detail URL.
-      window.history.replaceState(null, '', workspacePath(useWorkspaceStore.getState()))
+      syncWorkspaceWithLocation()
       readingLocation = false
     }
     readLocation()

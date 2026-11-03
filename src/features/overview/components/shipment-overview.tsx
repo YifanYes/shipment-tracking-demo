@@ -1,4 +1,4 @@
-import { lazy, Suspense, useMemo, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, type RefObject } from 'react'
 import {
   Anchor,
   AlertTriangle,
@@ -6,6 +6,7 @@ import {
   Check,
   ChevronRight,
   Flag,
+  LocateFixed,
   Package,
   Ship,
   ShieldCheck,
@@ -14,6 +15,7 @@ import {
   X,
 } from 'lucide-react'
 import type { ShipmentView } from '@/domain/contracts'
+import { ErrorBoundary } from '@/shared/ui/error-boundary'
 import { formatTime, stageLabels, updateAge } from '@/shared/lib/format'
 import {
   activeIncidents,
@@ -63,11 +65,29 @@ export function ShipmentOverview({ shipments, cutoffAt, onOpenShipment }: Props)
   const attention = useMemo(() => attentionQueue(shipments, cutoffAt), [shipments, cutoffAt])
   const selected = visible.find((item) => item.shipment.id === selectedId) ?? null
   const site = sites.find((entry) => entry.id === siteId) ?? null
-  const list = clusterIds
-    ? visible.filter((item) => clusterIds.includes(item.shipment.id))
-    : site
-      ? shipmentsAtSite(visible, site.id)
-      : visible
+  // A cluster whose shipments have all been delivered no longer filters anything.
+  const cluster = visible.filter((item) => clusterIds?.includes(item.shipment.id))
+  const list = cluster.length ? cluster : site ? shipmentsAtSite(visible, site.id) : visible
+  const surfaceRef = useRef<HTMLDivElement>(null)
+  const cardRef = useRef<HTMLElement>(null)
+  const listRef = useRef<HTMLElement>(null)
+  const trigger = useRef<HTMLElement | null>(null)
+  const [revealRequest, setRevealRequest] = useState(0)
+
+  // The card can be off screen, above a tapped row on mobile or below the map on any screen.
+  useEffect(() => {
+    const card = cardRef.current
+    if (!revealRequest || !card) return
+    const { top, bottom } = card.getBoundingClientRect()
+    if (top >= 0 && bottom <= window.innerHeight) return
+    surfaceRef.current?.scrollIntoView?.({ block: 'start' })
+    card.scrollIntoView?.({ block: 'nearest' })
+  }, [revealRequest])
+
+  // Opening a cluster removes its marker, and the keyboard continues at the shipments it holds.
+  useEffect(() => {
+    if (clusterIds) listRef.current?.focus({ preventScroll: true })
+  }, [clusterIds])
   const modes = new Set(
     visible.flatMap((item) => item.shipment.legs.filter(legRoute).map((leg) => leg.mode)),
   )
@@ -85,8 +105,10 @@ export function ShipmentOverview({ shipments, cutoffAt, onOpenShipment }: Props)
       onOpenShipment(id)
       return
     }
+    trigger.current = document.activeElement instanceof HTMLElement ? document.activeElement : null
     setSelectedId(id)
     setClusterIds(null)
+    setRevealRequest((request) => request + 1)
     if (site && !site.shipmentIds.includes(id)) setSiteId(null)
   }
   const selectSite = (id: string | null) => {
@@ -96,6 +118,11 @@ export function ShipmentOverview({ shipments, cutoffAt, onOpenShipment }: Props)
   const selectCluster = (ids: string[]) => {
     setClusterIds(ids)
     setSiteId(null)
+  }
+  const closeCard = () => {
+    setSelectedId(null)
+    if (trigger.current?.isConnected) trigger.current.focus()
+    else listRef.current?.focus()
   }
   const clearFilter = () => {
     setClusterIds(null)
@@ -109,20 +136,33 @@ export function ShipmentOverview({ shipments, cutoffAt, onOpenShipment }: Props)
           <h2 id="network-title">Envíos sin entregar</h2>
           <span className="map-shipment-count">{visible.length}</span>
         </div>
-        <div className="map-surface">
+        <button type="button" className="skip-link" onClick={() => listRef.current?.focus()}>
+          Saltar el mapa
+        </button>
+        <div className="map-surface" ref={surfaceRef}>
           <div className="logistics-map-frame">
-            <Suspense fallback={<output className="map-loading">Cargando mapa…</output>}>
-              <LogisticsMap
-                shipments={visible}
-                sites={sites}
-                selected={selected}
-                selectedSiteId={site?.id ?? null}
-                cutoffAt={cutoffAt}
-                onSelect={focusShipment}
-                onSiteSelect={selectSite}
-                onClusterSelect={selectCluster}
-              />
-            </Suspense>
+            <ErrorBoundary
+              fallback={
+                <output className="map-unavailable">
+                  <LocateFixed size={26} aria-hidden="true" />
+                  <strong>El mapa no está disponible</strong>
+                  <span>Puedes consultar y seleccionar los envíos en la lista inferior.</span>
+                </output>
+              }
+            >
+              <Suspense fallback={<output className="map-loading">Cargando mapa…</output>}>
+                <LogisticsMap
+                  shipments={visible}
+                  sites={sites}
+                  selected={selected}
+                  selectedSiteId={site?.id ?? null}
+                  cutoffAt={cutoffAt}
+                  onSelect={focusShipment}
+                  onSiteSelect={selectSite}
+                  onClusterSelect={selectCluster}
+                />
+              </Suspense>
+            </ErrorBoundary>
             {!visible.length && (
               <div className="map-empty">
                 <span className="map-empty-icon">
@@ -174,21 +214,32 @@ export function ShipmentOverview({ shipments, cutoffAt, onOpenShipment }: Props)
           )}
         </div>
 
+        <output className="sr-only">
+          {selected ? `${selected.shipment.reference} seleccionado` : ''}
+        </output>
         {selected && (
           <SelectedShipment
+            ref={cardRef}
             item={selected}
             cutoffAt={cutoffAt}
             onOpen={() => onOpenShipment(selected.shipment.id)}
-            onClose={() => setSelectedId(null)}
+            onClose={closeCard}
           />
         )}
 
         {list.length > 0 && (
-          <div className="map-shipment-list" aria-label="Envíos del mapa">
-            {(clusterIds || site) && (
+          <section
+            className="map-shipment-list"
+            aria-label="Envíos del mapa"
+            ref={listRef}
+            tabIndex={-1}
+          >
+            {(cluster.length > 0 || site) && (
               <div className="map-list-heading">
                 <span>
-                  {site ? `${siteKindLabels[site.kind]} · ${site.name}` : 'Zona del mapa'}
+                  {cluster.length
+                    ? 'Zona del mapa'
+                    : site && `${siteKindLabels[site.kind]} · ${site.name}`}
                 </span>
                 <button type="button" onClick={clearFilter}>
                   Ver todos
@@ -229,14 +280,13 @@ export function ShipmentOverview({ shipments, cutoffAt, onOpenShipment }: Props)
                 </button>
               )
             })}
-          </div>
+          </section>
         )}
       </section>
 
       <section className="attention-panel" aria-labelledby="attention-title">
         <div className="panel-heading">
           <h2 id="attention-title">Necesita tu atención</h2>
-          <span className="attention-count">{attention.length}</span>
         </div>
         {attention.length ? (
           <div className="attention-list">
@@ -258,17 +308,17 @@ export function ShipmentOverview({ shipments, cutoffAt, onOpenShipment }: Props)
                   <span>
                     {item.origin?.placeLabel} → {item.destination?.placeLabel}
                   </span>
-                  <ul>
+                  <span className="attention-lines">
                     {lines.map((line) => (
-                      <li key={line.key} data-severity={line.severity}>
+                      <span key={line.key} data-severity={line.severity}>
                         {line.label}
                         {line.severity && ` · ${severityLabels[line.severity]}`}
                         {line.attention &&
                           line.attention !== 'unreviewed' &&
                           ` · ${attentionStateLabels[line.attention]}`}
-                      </li>
+                      </span>
                     ))}
-                  </ul>
+                  </span>
                   <span className="attention-item-action">
                     Localizar envío <ArrowRight size={13} aria-hidden="true" />
                   </span>
@@ -290,11 +340,13 @@ export function ShipmentOverview({ shipments, cutoffAt, onOpenShipment }: Props)
 }
 
 function SelectedShipment({
+  ref,
   item,
   cutoffAt,
   onOpen,
   onClose,
 }: {
+  ref: RefObject<HTMLElement | null>
   item: ShipmentView
   cutoffAt: string
   onOpen: () => void
@@ -314,7 +366,11 @@ function SelectedShipment({
       : undefined
   const legs = sortedLegs(item)
   return (
-    <section className="map-selected" aria-label={`Resumen de ${item.shipment.reference}`}>
+    <section
+      className="map-selected"
+      ref={ref}
+      aria-label={`Resumen de ${item.shipment.reference}`}
+    >
       <div className="map-selected-heading">
         <strong>{item.shipment.reference}</strong>
         <span className="map-status" data-tone={mapTone(item, cutoffAt)}>
@@ -349,13 +405,13 @@ function SelectedShipment({
           <dt>Última ubicación confirmada</dt>
           <dd>{location?.name ?? 'Sin ubicación confirmada'}</dd>
           {confirmed && (
-            <>
+            <dd className="map-fact-note">
               <small>
                 {source && `${source} · `}
                 {updateAge(confirmed.confirmedAt, cutoffAt)}
               </small>
               <time dateTime={confirmed.confirmedAt}>{formatTime(confirmed.confirmedAt)}</time>
-            </>
+            </dd>
           )}
         </div>
         <div>
@@ -369,15 +425,17 @@ function SelectedShipment({
                   ? `${formatTime(eta.earliestAt)} – ${formatTime(eta.latestAt)}`
                   : 'Sin previsión'}
           </dd>
-          <small>
-            {delivered
-              ? 'Confirmada por el operador'
-              : eta.kind === 'operator'
-                ? `Comunicada por ${operatorName(eta.operatorId) ?? 'el operador'}`
-                : eta.kind === 'estimate'
-                  ? 'Intervalo estimado'
-                  : eta.reason}
-          </small>
+          <dd className="map-fact-note">
+            <small>
+              {delivered
+                ? 'Confirmada por el operador'
+                : eta.kind === 'operator'
+                  ? `Comunicada por ${operatorName(eta.operatorId) ?? 'el operador'}`
+                  : eta.kind === 'estimate'
+                    ? 'Intervalo estimado'
+                    : eta.reason}
+            </small>
+          </dd>
         </div>
         <div>
           <dt>Fecha comprometida</dt>

@@ -65,7 +65,7 @@ export function ShipmentIncidents({
   return (
     <section className="detail-panel incidents-panel" aria-labelledby="incidents-title">
       <div className="detail-panel-heading">
-        <h3 id="incidents-title">
+        <h3 id="incidents-title" tabIndex={-1}>
           <AlertTriangle size={18} aria-hidden="true" />
           Incidencias
         </h3>

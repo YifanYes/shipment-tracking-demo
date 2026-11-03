@@ -194,6 +194,7 @@ export default function LogisticsMap({
         renderWorldCopies: false,
         attributionControl: { compact: true },
         locale: {
+          'Map.Title': 'Mapa',
           'FullscreenControl.Enter': 'Ampliar mapa a pantalla completa',
           'FullscreenControl.Exit': 'Salir de pantalla completa',
           'AttributionControl.ToggleAttribution': 'Mostrar atribución del mapa',
@@ -556,7 +557,7 @@ export default function LogisticsMap({
                 type="button"
                 className="map-cluster"
                 data-tone={marker.attention ? 'attention' : 'transit'}
-                aria-label={`${marker.count} envíos agrupados, ${marker.attention} requieren atención. Ampliar zona`}
+                aria-label={`${marker.count} envíos agrupados, ${marker.attention} ${marker.attention === 1 ? 'requiere' : 'requieren'} atención. Ampliar zona`}
                 onClick={() => void expandCluster(marker)}
               >
                 {marker.count}

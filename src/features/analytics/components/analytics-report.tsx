@@ -63,6 +63,12 @@ export function AnalyticsReport({
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState<{ count: number } | null>(null)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const moveFocus = useRef(false)
+  useEffect(() => {
+    if (!generated || !moveFocus.current) return
+    moveFocus.current = false
+    document.getElementById('report-title')?.focus()
+  }, [generated])
   useEffect(
     () => () => {
       if (timer.current) clearTimeout(timer.current)
@@ -116,6 +122,7 @@ export function AnalyticsReport({
       timer.current = null
       setLoading(null)
       build(filters)
+      moveFocus.current = true
     }, queryMs)
   }
   const onSubmit = (event: FormEvent) => {
@@ -161,7 +168,11 @@ export function AnalyticsReport({
           onChange={setOperatorIds}
         />
         <div className="analytics-submit">
-          <Button type="submit" disabled={Boolean(periodError) || Boolean(loading)}>
+          <Button
+            type="submit"
+            focusableWhenDisabled
+            disabled={Boolean(periodError) || Boolean(loading)}
+          >
             {loading ? (
               <LoaderCircle className="analytics-spin" aria-hidden="true" />
             ) : (
@@ -332,7 +343,9 @@ function ReportView({
     <section className="report" aria-labelledby="report-title" data-outdated={outdated}>
       <div className="report-heading">
         <div>
-          <h2 id="report-title">Reporte logístico</h2>
+          <h2 id="report-title" tabIndex={-1}>
+            Reporte logístico
+          </h2>
           <p className="report-meta">
             Corte {formatTime(report.cutoffAt)} · {dayFormat.format(new Date(report.filters.from))}{' '}
             – {dayFormat.format(new Date(report.filters.to))} · Centros:{' '}

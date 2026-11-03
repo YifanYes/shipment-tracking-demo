@@ -33,7 +33,7 @@ describe('listado de envíos', () => {
     expect(sea.textContent).toContain('Carretera + Mar')
     expect(sea.textContent).toContain('ETA del operador')
     const stale = rows().find((row) => row.textContent?.includes('ATL-ES-401'))!
-    expect(stale.textContent).toContain('Información insuficiente')
+    expect(stale.textContent).toContain('Sin previsión')
     expect(stale.querySelector('.shipment-attention')?.textContent).toContain(
       'Información sin actualizar',
     )

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { demoSeed } from '@/data/scenarios'
-import { currentNotificationsOf, notificationsOf } from '@/domain/actions'
+import { currentNotificationsOf, explainIncident, notificationsOf } from '@/domain/actions'
 import { attentionReasons } from '@/domain/attention'
 import { selectSummary, selectVisibleShipments } from '@/domain/selectors'
 import { createWorkspaceStore } from '@/store/workspace-store'
@@ -19,6 +19,21 @@ function operationsStore() {
 }
 
 describe('acciones sobre incidencias', () => {
+  it('fecha la falta de noticias en el último evento, no en el umbral de antigüedad', () => {
+    const store = operationsStore()
+    const stale = view(store, 'shipment-es-005')
+    const incident = stale.incidents.find((item) => item.kind === 'stale')!
+    const last = stale.events.find((event) => event.id === incident.evidence[0]!.id)!
+    expect(Date.parse(incident.openedAt)).toBeGreaterThan(Date.parse(last.occurredAt))
+    const hours = Math.round(
+      (Date.parse(store.getState().cutoffAt) - Date.parse(last.occurredAt)) / 3_600_000,
+    )
+    const { summary } = explainIncident(stale, incident, store.getState().cutoffAt)
+    expect(summary).toContain('30 oct, 12:00')
+    expect(summary).toContain(`(${hours} h)`)
+    expect(action(store, 'shipment-es-005', 'contact_operator').message).toContain('30 oct, 12:00')
+  })
+
   it('propone acciones con prioridad y las evidencias de su incidencia', () => {
     const store = operationsStore()
     const held = view(store, 'shipment-tr-004')

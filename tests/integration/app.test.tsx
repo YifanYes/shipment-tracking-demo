@@ -38,6 +38,7 @@ const mount = async () => {
 
 beforeEach(() => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true })
+  window.scrollTo = () => {}
   // Phase 1 walkthrough runs on the single-shipment seed; the full dataset has its own tests.
   useWorkspaceStore.setState({ seed: nationalSeed })
   useWorkspaceStore.getState().setIdentity('operations-madrid')
@@ -106,14 +107,14 @@ describe('primer recorrido de Atlas', () => {
     expect(document.activeElement?.id).toBe('detail-title')
     expect(window.location.pathname).toBe('/shipments/shipment-es-001')
     expect(document.title).toBe('ATL-ES-001 | Atlas')
-    expect(container.querySelector('.shipment-row')).toBeNull()
+    expect(container.querySelector('.shipment-row')?.closest('[hidden]')).not.toBeNull()
     expect(container.querySelector('[data-testid="map"]')).toBeNull()
     await click('Volver a envíos')
     expect(window.location.pathname).toBe('/shipments')
     expect(container.querySelector('#detail-title')).toBeNull()
     await act(async () => container.querySelector<HTMLAnchorElement>('.shipment-row')!.click())
     expect(container.querySelector('#detail-title')?.textContent).toBe('ATL-ES-001')
-    expect(container.querySelector('.shipment-row')).toBeNull()
+    expect(container.querySelector('.shipment-row')?.closest('[hidden]')).not.toBeNull()
     await click('Siguiente paso')
     expect(container.querySelector('.detail-status')?.textContent).toContain('Entregado')
     expect(container.querySelector('.detail-facts')?.textContent).toContain('Almacén Valencia')
@@ -122,7 +123,7 @@ describe('primer recorrido de Atlas', () => {
     expect(timeline[0]?.textContent).toContain('DELIVERED')
     expect(timeline[1]?.textContent).toContain('ON_ROUTE')
     expect(timeline[2]?.textContent).toContain('PICKED_UP')
-    expect(button('Demo completada').disabled).toBe(true)
+    expect(button('Demo completada').getAttribute('aria-disabled')).toBe('true')
     await click('Volver a envíos')
     expect(container.querySelector('.shipment-row')?.textContent).toContain('Entregado')
     await click('Vista general')
@@ -190,6 +191,6 @@ describe('primer recorrido de Atlas', () => {
       window.dispatchEvent(new PopStateEvent('popstate'))
     })
     expect(container.querySelector('#detail-title')?.textContent).toBe('ATL-ES-001')
-    expect(container.querySelector('.shipment-row')).toBeNull()
+    expect(container.querySelector('.shipment-row')?.closest('[hidden]')).not.toBeNull()
   })
 })

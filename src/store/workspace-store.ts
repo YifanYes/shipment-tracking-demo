@@ -11,6 +11,8 @@ export type WorkspaceView = 'overview' | 'shipments' | 'shipment-detail' | 'anal
 export interface WorkspaceState extends TrackingState {
   seed: DemoSeed
   view: WorkspaceView
+  /** Where the detail's back button returns: the report when it was opened from there. */
+  backView: 'shipments' | 'analytics'
   setView: (view: Exclude<WorkspaceView, 'shipment-detail'>) => void
   sidebarCollapsed: boolean
   toggleSidebar: () => void
@@ -48,7 +50,13 @@ export function createWorkspaceStore(
   }
   const restored = restoreSession(seed, saved)
   // An incompatible snapshot is discarded so the next save starts clean.
-  if (saved && !restored) storage?.removeItem(STORAGE_KEY)
+  if (saved && !restored) {
+    try {
+      storage?.removeItem(STORAGE_KEY)
+    } catch {
+      // Blocked storage: the snapshot is ignored and overwritten by the next save, if any.
+    }
+  }
   const store = create<WorkspaceState>((set) => ({
     seed,
     dataset: restored?.dataset ?? seed.dataset,
@@ -56,6 +64,7 @@ export function createWorkspaceStore(
     cutoffAt: restored?.cutoffAt ?? seed.dataset.referenceTime,
     selectedShipmentId: null,
     view: 'overview',
+    backView: 'shipments',
     setView: (view) =>
       set((state) => ({
         view: view === 'analytics' && !isOperations(state) ? 'overview' : view,
@@ -75,6 +84,12 @@ export function createWorkspaceStore(
           (item) => item.shipment.id === shipmentId,
         )
         return {
+          backView:
+            state.view === 'shipment-detail'
+              ? state.backView
+              : state.view === 'analytics'
+                ? 'analytics'
+                : 'shipments',
           selectedShipmentId: allowed ? shipmentId : null,
           view: allowed
             ? 'shipment-detail'

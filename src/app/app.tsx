@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { arrivalsToday } from '@/domain/attention'
 import { selectSummary, selectVisibleShipments } from '@/domain/selectors'
 import { OverviewMetrics, ShipmentOverview } from '@/features/overview'
@@ -7,8 +7,8 @@ import { CustomerHome } from '@/features/customer'
 import { ShipmentDetail, ShipmentList } from '@/features/shipments'
 import { shipmentChanges } from '@/domain/changes'
 import { Toaster, toastManager } from '@/shared/ui/toast'
-import { selectNextStep, useWorkspaceStore } from '@/store/workspace-store'
-import { PLAY_STEP_MS } from '@/simulation/clock'
+import { selectNextStep, useWorkspaceStore, type WorkspaceView } from '@/store/workspace-store'
+import { PLAY_STEP_MS, stepLabel } from '@/simulation/clock'
 import { announceStep } from './demo-step-toast'
 import { Sidebar } from './layout/sidebar'
 import { Topbar } from './layout/topbar'
@@ -22,6 +22,7 @@ export function App() {
   const summary = selectSummary(shipments, state.cutoffAt)
   const selected = shipments.find((item) => item.shipment.id === state.selectedShipmentId)
   const identity = state.dataset.identities.find((item) => item.id === state.identityId)!
+  const nextStep = selectNextStep(state)
   const audience = identity.role
   const { view, setView, sidebarCollapsed, toggleSidebar } = state
   const pageTitle =
@@ -29,6 +30,31 @@ export function App() {
       ? 'Detalle del envío'
       : (navigationFor(identity.role).find((item) => item.id === view)?.label ?? 'Vista general')
   useWorkspaceNavigation()
+  const [listResults, setListResults] = useState<number | null>(null)
+  // The list and the report stay mounted once opened, so a detail does not lose their state.
+  const [opened, setOpened] = useState<readonly WorkspaceView[]>([view])
+  if (!opened.includes(view)) setOpened([...opened, view])
+
+  const location = useRef({
+    view,
+    selectedShipmentId: state.selectedShipmentId,
+    identityId: state.identityId,
+  })
+  useEffect(() => {
+    const previous = location.current
+    location.current = {
+      view,
+      selectedShipmentId: state.selectedShipmentId,
+      identityId: state.identityId,
+    }
+    const samePage =
+      previous.view === view && previous.selectedShipmentId === state.selectedShipmentId
+    if (samePage && previous.identityId === state.identityId) return
+    window.scrollTo(0, 0)
+    // The detail focuses its own heading; the identity selector keeps the focus while in use.
+    if (!samePage && view !== 'shipment-detail' && previous.identityId === state.identityId)
+      document.getElementById('main-content')?.focus({ preventScroll: true })
+  }, [view, state.selectedShipmentId, state.identityId])
 
   /** Manual and automatic advance share the same step, toast and end condition. */
   const advance = useCallback(() => {
@@ -67,7 +93,7 @@ export function App() {
           demoControls={
             identity.role === 'operations'
               ? {
-                  nextStep: selectNextStep(state),
+                  nextStep: nextStep && { ...nextStep, label: stepLabel(nextStep, shipments) },
                   playing: state.playing,
                   onTogglePlay: () => {
                     if (state.playing) return state.setPlaying(false)
@@ -87,12 +113,15 @@ export function App() {
         <div className="main-shell">
           <Topbar
             title={pageTitle}
-            count={view === 'shipments' ? shipments.length : null}
+            count={view === 'shipments' ? (listResults ?? shipments.length) : null}
             sidebarCollapsed={sidebarCollapsed}
             onToggleSidebar={toggleSidebar}
             identities={state.dataset.identities}
             identityId={state.identityId}
-            onIdentityChange={state.setIdentity}
+            onIdentityChange={(id) => {
+              toastManager.close()
+              state.setIdentity(id)
+            }}
           />
 
           <main
@@ -124,13 +153,17 @@ export function App() {
               </>
             )}
 
-            {view === 'shipments' && (
-              <ShipmentList
-                shipments={shipments}
-                cutoffAt={state.cutoffAt}
-                audience={audience}
-                onSelect={state.selectShipment}
-              />
+            {opened.includes('shipments') && (
+              <div hidden={view !== 'shipments'}>
+                <ShipmentList
+                  key={state.identityId}
+                  shipments={shipments}
+                  cutoffAt={state.cutoffAt}
+                  audience={audience}
+                  onSelect={state.selectShipment}
+                  onResultsChange={setListResults}
+                />
+              </div>
             )}
             {selected && view === 'shipment-detail' && (
               <ShipmentDetail
@@ -138,7 +171,8 @@ export function App() {
                 item={selected}
                 cutoffAt={state.cutoffAt}
                 audience={audience}
-                onBack={() => setView('shipments')}
+                backLabel={state.backView === 'analytics' ? 'Volver al reporte' : 'Volver a envíos'}
+                onBack={() => setView(state.backView)}
                 onOpenShipment={state.selectShipment}
                 onRecordAction={(actionId, message) =>
                   state.recordAction(selected.shipment.id, actionId, message)
@@ -148,15 +182,17 @@ export function App() {
                 }
               />
             )}
-            {view === 'analytics' && audience === 'operations' && (
-              <AnalyticsReport
-                key={state.identityId}
-                shipments={shipments}
-                identityId={state.identityId}
-                cutoffAt={state.cutoffAt}
-                datasetRevision={state.dataset.revision}
-                onOpenShipment={state.selectShipment}
-              />
+            {opened.includes('analytics') && audience === 'operations' && (
+              <div hidden={view !== 'analytics'}>
+                <AnalyticsReport
+                  key={state.identityId}
+                  shipments={shipments}
+                  identityId={state.identityId}
+                  cutoffAt={state.cutoffAt}
+                  datasetRevision={state.dataset.revision}
+                  onOpenShipment={state.selectShipment}
+                />
+              </div>
             )}
           </main>
         </div>

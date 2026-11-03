@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { FilePlus2, Mail, MessageSquareShare } from 'lucide-react'
 import type { RecommendedAction } from '@/domain/contracts'
 import { Badge } from '@/shared/ui/badge'
@@ -27,6 +27,9 @@ const resultTitles: Record<RecommendedAction['kind'], string> = {
   contact_operator: 'Solicitud registrada',
   provide_document: 'Documento aportado',
 }
+
+/** The button of a recorded action disappears: focus continues at the incidents heading. */
+const incidentsHeading = () => document.getElementById('incidents-title')
 
 export function IncidentActions({
   actions,
@@ -60,7 +63,13 @@ export function IncidentActions({
             <p>{action.explanation}</p>
           </div>
           {action.kind === 'provide_document' ? (
-            <Button size="sm" onClick={() => record(action)}>
+            <Button
+              size="sm"
+              onClick={() => {
+                record(action)
+                incidentsHeading()?.focus()
+              }}
+            >
               <FilePlus2 aria-hidden="true" />
               {confirmLabels[action.kind]}
             </Button>
@@ -82,6 +91,7 @@ function MessageDialog({
 }) {
   const [open, setOpen] = useState(false)
   const [message, setMessage] = useState(action.message)
+  const confirmed = useRef(false)
   const Icon = action.kind === 'notify_customer' ? Mail : MessageSquareShare
   const fieldId = `${action.id}-message`
   return (
@@ -96,12 +106,16 @@ function MessageDialog({
         <Icon aria-hidden="true" />
         {action.kind === 'notify_customer' ? 'Preparar aviso' : 'Preparar solicitud'}
       </Button>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent
+        className="sm:max-w-md"
+        finalFocus={() => (confirmed.current ? incidentsHeading() : true)}
+      >
         <form
           className="action-form"
           onSubmit={(event) => {
             event.preventDefault()
             if (!message.trim()) return
+            confirmed.current = true
             onConfirm(message)
             setOpen(false)
           }}

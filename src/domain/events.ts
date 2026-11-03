@@ -149,11 +149,13 @@ export function shipmentEvents(
   return (indexEvents(dataset.events).get(shipment.id) ?? [])
     .filter((event) => {
       const leg = shipment.legs.find((item) => item.id === event.legId)
+      const occurred = Date.parse(event.occurredAt)
+      const received = Date.parse(event.receivedAt)
       if (
         !leg ||
         leg.operatorId !== event.operatorId ||
-        Date.parse(event.occurredAt) > cutoff ||
-        Date.parse(event.receivedAt) > cutoff ||
+        !(occurred <= cutoff) ||
+        !(received <= cutoff) ||
         seen.has(event.id)
       )
         return false

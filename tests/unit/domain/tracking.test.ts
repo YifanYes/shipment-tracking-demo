@@ -139,3 +139,11 @@ describe('hechos y proyección compartida', () => {
     expect(shipment.committedDeliveryAt).toBe('2026-10-31T14:00:00.000Z')
   })
 })
+
+describe('eventos con fecha inválida', () => {
+  it('se ignoran y no entregan el envío', () => {
+    const base = nationalDataset.events.at(-1)!
+    const invalid = { ...base, id: 'event-invalid', rawCode: 'DELIVERED', occurredAt: 'nope' }
+    expect(project([...nationalDataset.events, invalid]).lifecycle).not.toBe('delivered')
+  })
+})

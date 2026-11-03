@@ -50,6 +50,12 @@ const documentOf = (view: IncidentView, incident: ShipmentIncident) =>
     incident.evidence.some((item) => item.kind === 'document' && item.id === document.id),
   )
 
+/** A stale incident opens after the threshold; the last news is its evidence event. */
+const lastNewsAt = (view: IncidentView, incident: ShipmentIncident) =>
+  view.events.find((entry) =>
+    incident.evidence.some((item) => item.kind === 'operator_event' && item.id === entry.id),
+  )?.occurredAt ?? incident.openedAt
+
 const customsActive = (view: IncidentView) =>
   view.incidents.some(
     (incident) =>
@@ -104,14 +110,16 @@ export function explainIncident(
           : 'El expediente del envío está incompleto.',
       }
     }
-    case 'stale':
+    case 'stale': {
+      const since = lastNewsAt(view, incident)
       return {
-        summary: `Sin noticias de ${operator} desde el ${when(incident.openedAt)} (${hoursBetween(incident.openedAt, cutoffAt)} h).`,
+        summary: `Sin noticias de ${operator} desde el ${when(since)} (${hoursBetween(since, cutoffAt)} h).`,
         impact:
           eta.kind === 'unavailable'
             ? 'Sin ETA fiable.'
             : 'La ETA comunicada puede no estar vigente.',
       }
+    }
   }
 }
 
@@ -209,7 +217,7 @@ export function candidateActions(view: IncidentView): RecommendedAction[] {
           'Pedir posición y ETA al operador',
           'Solo el operador puede confirmar la posición actual.',
           `${reference}: sin actualizaciones`,
-          `No recibimos actualizaciones de ${reference} desde el ${when(incident.openedAt)}. Necesitamos la última posición confirmada y una ETA.`,
+          `No recibimos actualizaciones de ${reference} desde el ${when(lastNewsAt(view, incident))}. Necesitamos la última posición confirmada y una ETA.`,
         )
         break
     }

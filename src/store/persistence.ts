@@ -1,5 +1,6 @@
 import type { ActivityRecord, DemoDataset, DemoSeed, IsoDateTime } from '@/domain/contracts'
-import { applyActivity } from '@/domain/actions'
+import { recordAction } from '@/domain/actions'
+import { selectVisibleShipments } from '@/domain/selectors'
 import { applyScheduledEvents } from '@/simulation/clock'
 
 export const STORAGE_KEY = 'atlas-demo'
@@ -22,31 +23,48 @@ export interface RestoredSession {
   sidebarCollapsed: boolean
 }
 
-const actionKinds = new Set<ActivityRecord['action']>([
-  'notify_customer',
-  'contact_operator',
-  'provide_document',
-])
 const isString = (value: unknown): value is string => typeof value === 'string'
 
-function validRecord(value: unknown, dataset: DemoDataset, cutoff: number) {
-  if (!value || typeof value !== 'object') return false
-  const record = value as Record<string, unknown>
-  return (
-    ['id', 'actionId', 'shipmentId', 'incidentId', 'actorIdentityId', 'recordedAt'].every((key) =>
-      isString(record[key]),
-    ) &&
-    ['recipient', 'subject', 'message'].every((key) => isString(record[key])) &&
-    actionKinds.has(record.action as ActivityRecord['action']) &&
-    Date.parse(record.recordedAt as string) <= cutoff &&
-    dataset.shipments.some((shipment) => shipment.id === record.shipmentId) &&
-    dataset.identities.some((identity) => identity.id === record.actorIdentityId) &&
-    (record.documentId === undefined ||
-      dataset.documents.some(
-        (document) =>
-          document.id === record.documentId && document.shipmentId === record.shipmentId,
-      ))
-  )
+/**
+ * Replay the records in order through the same rule that created them. A record that the
+ * identity could not have made at that step, or that differs from what the rule produces,
+ * invalidates the whole list. Returns the dataset at the last record's step.
+ */
+function replayActivity(seed: DemoSeed, records: readonly unknown[], stops: readonly number[]) {
+  let dataset = seed.dataset
+  let previous = -Infinity
+  for (const value of records) {
+    if (!value || typeof value !== 'object') return null
+    const record = value as Record<string, unknown>
+    const { recordedAt, actorIdentityId, shipmentId, actionId, message } = record
+    if (![recordedAt, actorIdentityId, shipmentId, actionId, message].every(isString)) return null
+    const at = recordedAt as string
+    const time = Date.parse(at)
+    if (!stops.includes(time) || time < previous) return null
+    previous = time
+    const actor = dataset.identities.find((identity) => identity.id === actorIdentityId)
+    if (actor?.role !== 'operations') return null
+    dataset = applyScheduledEvents(dataset, seed.scenarios, at)
+    const view = selectVisibleShipments({
+      dataset,
+      identityId: actor.id,
+      cutoffAt: at,
+      selectedShipmentId: null,
+    }).find((item) => item.shipment.id === shipmentId)
+    if (!view) return null
+    const next = recordAction({
+      dataset,
+      view,
+      actionId: actionId as string,
+      actorIdentityId: actor.id,
+      at,
+      message: message as string,
+    })
+    if (next === dataset || JSON.stringify(next.activity?.at(-1)) !== JSON.stringify(record))
+      return null
+    dataset = next
+  }
+  return dataset
 }
 
 /**
@@ -74,18 +92,17 @@ export function restoreSession(seed: DemoSeed, raw: string | null): RestoredSess
     !dataset.identities.some((identity) => identity.id === snapshot.identityId) ||
     !stops.includes(cutoff) ||
     !Array.isArray(snapshot.activity) ||
-    !snapshot.activity.every((record) => validRecord(record, dataset, cutoff)) ||
     typeof snapshot.sidebarCollapsed !== 'boolean'
   )
+    return null
+  const replayed = replayActivity(seed, snapshot.activity, stops)
+  if (!replayed || snapshot.activity.some((record) => Date.parse(record.recordedAt) > cutoff))
     return null
   const cutoffAt = new Date(cutoff).toISOString()
   return {
     identityId: snapshot.identityId!,
     cutoffAt,
-    dataset: applyActivity(
-      applyScheduledEvents(dataset, seed.scenarios, cutoffAt),
-      snapshot.activity,
-    ),
+    dataset: applyScheduledEvents(replayed, seed.scenarios, cutoffAt),
     sidebarCollapsed: snapshot.sidebarCollapsed,
   }
 }

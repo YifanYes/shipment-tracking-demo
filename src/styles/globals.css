@@ -690,7 +690,7 @@
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
-  --muted-foreground: #67768c;
+  --muted-foreground: #5b6980;
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
@@ -740,7 +740,7 @@ h2 {
   border: 1px solid #e7ecf6;
   background: #f5f7fc;
   border-radius: 20px;
-  color: #7990bf;
+  color: #5b6980;
   display: grid;
   place-items: center;
   margin: 0 auto 19px;
@@ -759,7 +759,7 @@ h2 {
 .empty-page p {
   max-width: 420px;
   margin: auto;
-  color: #78869b;
+  color: #5b6980;
   font-size: 13px;
   line-height: 1.8;
 }
@@ -822,4 +822,10 @@ h2 {
 select:focus-visible {
   outline: 3px solid var(--ring);
   outline-offset: 3px;
+}
+
+/* Headings that only receive focus by script, to place the keyboard after a page change. */
+h2[tabindex='-1']:focus,
+h3[tabindex='-1']:focus {
+  outline: none;
 }

@@ -1,4 +1,10 @@
-import type { DemoDataset, DemoScenario, DemoStep, IsoDateTime } from '@/domain/contracts'
+import type {
+  DemoDataset,
+  DemoScenario,
+  DemoStep,
+  IsoDateTime,
+  ShipmentView,
+} from '@/domain/contracts'
 
 const releaseAt = (dataset: DemoDataset, offsetMinutes: number) =>
   Date.parse(dataset.referenceTime) + offsetMinutes * 60_000
@@ -46,6 +52,20 @@ export function nextDemoStep(
   return step
     ? { ...step, at: new Date(releaseAt(dataset, step.offsetMinutes)).toISOString() }
     : null
+}
+
+/** A step's name, unless it names a shipment outside the identity's perimeter. */
+export function stepLabel(
+  step: Pick<DemoStep, 'label'>,
+  visible: readonly ShipmentView[],
+  fallback = 'Avanzar la demo',
+) {
+  const references = step.label.match(/ATL-[A-Z]+-\d+/g) ?? []
+  return references.every((reference) =>
+    visible.some((view) => view.shipment.reference === reference),
+  )
+    ? step.label
+    : fallback
 }
 
 /** Pause between steps while the demo plays on its own. */

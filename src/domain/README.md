@@ -55,6 +55,7 @@ Las métricas históricas, las incidencias y el resto de adaptadores se implemen
 
 - Cada operador tiene códigos propios y su clave de ETA en `payload`, que siempre se refiere al destino final: Vía Cargo `arrivalAt`, Transportes Cierzo `llegadaPrevista`, Naviera Boreal `eta`, Puente Aduanas `deliveryEta`. Un código o una clave de otro operador queda pendiente de clasificar.
 - Un evento de solo ETA sin fecha válida queda pendiente de clasificar.
+- Los eventos con `occurredAt` o `receivedAt` inválidos se ignoran.
 - En la última milla con aduana, `CUSTOMS_RELEASED` pasa el tramo de `customs` a `collected`: mercancía liberada para el transportista. Es el único evento que sale de aduana.
 
 ### Proyección
@@ -66,7 +67,7 @@ Las métricas históricas, las incidencias y el resto de adaptadores se implemen
 
 - Retraso: aviso del operador, ETA posterior al compromiso o compromiso vencido sin entrega (`incident-<envío>-overdue`). Se resuelve con la entrega o con una ETA posterior dentro del plazo, antes de que venza. Severidad alta si supera 24 h o el plazo ha vencido.
 - Aduana y retención en terminal: abiertas y resueltas solo por los eventos de retención y liberación. Aduana tiene severidad alta.
-- Documento pendiente: un documento `missing` del envío, o uno solicitado por `DOC_REQUIRED` (`payload.documentId`) antes de aportarse. Se resuelve en `uploadedAt`, sin liberar la aduana. Alta mientras la aduana siga retenida.
+- Documento pendiente: un documento `missing` del envío, o uno solicitado por `DOC_REQUIRED` (`payload.documentId`) antes de aportarse. Se resuelve en `uploadedAt`, sin liberar la aduana. Alta si coincidió con una retención aduanera, también después de la liberación; media en otro caso.
 - Información antigua: solo mientras dura; no se reconstruyen episodios pasados.
 - IDs: `incident-<evento>-<tipo>`, `incident-<documento>-missing`, `incident-<envío>-stale-<último evento>`. La atención siempre es `unreviewed`.
 
@@ -101,4 +102,4 @@ Las métricas históricas, las incidencias y el resto de adaptadores se implemen
 ### Reloj y persistencia
 
 - `playing` avanza un paso cada `PLAY_STEP_MS` (5 s) con el mismo avance, aviso y final que el botón. Se detiene al terminar, al pausar, al reiniciar o al cambiar de identidad, y solo operaciones puede activarlo.
-- `store/persistence.ts` guarda en `localStorage` (`atlas-demo`, versión 1) la identidad, el paso, los registros de actividad y el estado de la sidebar. Al cargar, reconstruye el dataset desde la semilla, los eventos hasta ese paso y los registros. Una versión distinta, JSON inválido, una identidad o un paso desconocidos o un registro que no corresponde al dataset descartan el estado guardado. `resetDemo` guarda el estado inicial.
+- `store/persistence.ts` guarda en `localStorage` (`atlas-demo`, versión 1) la identidad, el paso, los registros de actividad y el estado de la sidebar. Al cargar, reconstruye el dataset desde la semilla, los eventos hasta ese paso y los registros. Los registros se reproducen en orden con `recordAction`, en el paso y con la identidad que los hizo. Una versión distinta, JSON inválido, una identidad o un paso desconocidos o un registro que esa regla no habría producido descartan el estado guardado. `resetDemo` guarda el estado inicial.

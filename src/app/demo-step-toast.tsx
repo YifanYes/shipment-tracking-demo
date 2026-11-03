@@ -1,5 +1,6 @@
 import type { ShipmentChanges } from '@/domain/changes'
 import type { DemoStep, ShipmentView } from '@/domain/contracts'
+import { stepLabel } from '@/simulation/clock'
 import { toastManager } from '@/shared/ui/toast'
 
 function deliveries(references: readonly string[], late: readonly string[], other: boolean) {
@@ -29,7 +30,7 @@ export function announceStep(
   const late = changes.late.filter((reference) => others.includes(reference))
   const summary = deliveries(others, late, Boolean(main))
   toastManager.add({
-    title: main ? story.title : step.label,
+    title: main ? story.title : stepLabel(step, visible, 'Paso completado'),
     description:
       [main ? story.detail : null, summary].filter(Boolean).join(' ') ||
       'Sin cambios en tus envíos.',

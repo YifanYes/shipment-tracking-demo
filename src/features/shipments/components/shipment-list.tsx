@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { AlertTriangle, ChevronRight, Package, Ship, Truck } from 'lucide-react'
 import type { ShipmentView } from '@/domain/contracts'
 import { attentionReasons } from '@/domain/attention'
@@ -33,11 +33,13 @@ export function ShipmentList({
   cutoffAt,
   audience,
   onSelect,
+  onResultsChange,
 }: {
   shipments: readonly ShipmentView[]
   cutoffAt: string
   audience: Audience
   onSelect: (id: string) => void
+  onResultsChange?: (count: number) => void
 }) {
   const [filters, setFilters] = useState<ShipmentFilters>(emptyShipmentFilters)
   const [limit, setLimit] = useState(SHIPMENT_PAGE_SIZE)
@@ -46,6 +48,7 @@ export function ShipmentList({
     () => sortShipments(filterShipments(shipments, filters, cutoffAt), cutoffAt),
     [shipments, filters, cutoffAt],
   )
+  useEffect(() => onResultsChange?.(results.length), [onResultsChange, results.length])
   const updateFilters = (next: ShipmentFilters) => {
     setFilters(next)
     setLimit(SHIPMENT_PAGE_SIZE)
