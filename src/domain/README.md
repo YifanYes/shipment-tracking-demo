@@ -89,7 +89,7 @@ Las métricas históricas, las incidencias y el resto de adaptadores se implemen
 - Acciones por tipo: documento pendiente → aportar el documento; aduana o retención → avisar al cliente y pedir la fecha de liberación; retraso → avisar al cliente, y pedir nueva ETA si el operador no la ha comunicado; información sin actualizar → pedir posición y ETA. Son urgentes si la incidencia es de severidad alta o crítica. Su ID es estable: `action-<incidencia>-<tipo>`.
 - `ShipmentView.recommendations` contiene las acciones aún no registradas; `ShipmentView.activity`, las registradas hasta la fecha de corte. La atención de una incidencia es `unreviewed` sin registros, `handled` si todas sus acciones están registradas y `in_progress` en otro caso. La condición de la incidencia sigue dependiendo solo de los hechos.
 - `recordAction` solo registra una acción pendiente de una vista autorizada; repetirla no tiene efecto. El store exige además una identidad de operaciones. `applyActivity` aplica los registros una vez por ID: aportar un documento lo marca disponible en la fecha de corte, con su recurso estático, y aumenta `revision`. Avisos y solicitudes no cambian hechos físicos.
-- `DemoDataset.activity` guarda los registros. Los avisos al cliente (`notificationsOf`) se derivan de los registros `notify_customer` de las vistas visibles; el cliente no ve las solicitudes al operador.
+- `DemoDataset.activity` guarda los registros. Los avisos al cliente (`notificationsOf`) se derivan de los registros `notify_customer` de las vistas visibles; el cliente no ve las solicitudes al operador. El detalle del envío muestra todos sus avisos; el inicio del cliente, solo los de incidencias aún activas (`currentNotificationsOf`).
 
 ### Hallazgos del reporte
 

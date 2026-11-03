@@ -172,7 +172,7 @@ export function candidateActions(view: IncidentView): RecommendedAction[] {
         notify(
           `${reference}: entrega con retraso`,
           late
-            ? `Su envío ${reference} (${lane}) llegará previsiblemente el ${when(eta.arrivalAt)}, después de la fecha comprometida del ${committed}. Le informaremos de cualquier cambio.`
+            ? `Su envío ${reference} (${lane}) llegará previsiblemente el ${when(eta.arrivalAt)}, después de la fecha comprometida del ${committed}.`
             : `Su envío ${reference} (${lane}) no llegará en la fecha comprometida del ${committed}. Estamos confirmando la nueva fecha con el operador.`,
           'Avisar al cliente del retraso',
           'del retraso',
@@ -192,7 +192,7 @@ export function candidateActions(view: IncidentView): RecommendedAction[] {
         const where = incident.kind === 'customs' ? 'la aduana' : 'la terminal'
         notify(
           `${reference}: retenido en ${where} de ${place}`,
-          `Su envío ${reference} (${lane}) está retenido en ${where} de ${place}. Estamos gestionando su liberación y le avisaremos cuando continúe hacia destino.`,
+          `Su envío ${reference} (${lane}) está retenido en ${where} de ${place}. Estamos gestionando su liberación.`,
           'Avisar al cliente de la retención',
           'de la retención',
         )
@@ -331,4 +331,18 @@ export function notificationsOf(views: readonly ShipmentView[]): ShipmentNotific
         })),
     )
     .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt) || a.id.localeCompare(b.id))
+}
+
+/** Notices that still describe the present: their incident remains active at the cutoff. */
+export function currentNotificationsOf(views: readonly ShipmentView[]): ShipmentNotification[] {
+  return notificationsOf(
+    views.map((view) => ({
+      ...view,
+      activity: view.activity.filter((record) =>
+        view.incidents.some(
+          (incident) => incident.id === record.incidentId && incident.condition === 'active',
+        ),
+      ),
+    })),
+  )
 }

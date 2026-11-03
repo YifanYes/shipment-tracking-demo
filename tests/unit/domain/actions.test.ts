@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { demoSeed } from '@/data/scenarios'
-import { notificationsOf } from '@/domain/actions'
+import { currentNotificationsOf, notificationsOf } from '@/domain/actions'
 import { attentionReasons } from '@/domain/attention'
 import { selectSummary, selectVisibleShipments } from '@/domain/selectors'
 import { createWorkspaceStore } from '@/store/workspace-store'
@@ -88,6 +88,25 @@ describe('acciones sobre incidencias', () => {
     expect(store.getState().dataset).toBe(before)
     store.getState().setIdentity('customer-norte')
     expect(notificationsOf(views(store))).toEqual([])
+  })
+
+  it('el aviso sale del inicio al resolverse su incidencia y sigue como historial', () => {
+    const store = operationsStore()
+    const notify = action(store, 'shipment-tr-004', 'notify_customer')
+    expect(notify.message).not.toContain('avisaremos')
+    store.getState().recordAction('shipment-tr-004', notify.id)
+    const notices = () => {
+      const held = view(store, 'shipment-tr-004')
+      return { all: notificationsOf([held]), current: currentNotificationsOf([held]) }
+    }
+    expect(notices().current).toHaveLength(1)
+    // Providing the document does not release the shipment: the notice is still true.
+    const provide = action(store, 'shipment-tr-004', 'provide_document')
+    store.getState().recordAction('shipment-tr-004', provide.id)
+    expect(notices().current).toHaveLength(1)
+    demoSeed.steps.forEach(() => store.getState().advanceDemo())
+    expect(notices().current).toEqual([])
+    expect(notices().all).toHaveLength(1)
   })
 
   it('una identidad sin acceso al envío no puede registrar acciones', () => {

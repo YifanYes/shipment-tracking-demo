@@ -331,7 +331,7 @@ La prioridad es demostrar seguimiento multimodal, confianza en la información, 
 - [x] Fase 0 completada.
 - [x] Fase 1 completada.
 - [x] Fase 2 completada.
-- [ ] Fase 3 completada. Bloques de pasos, acciones, avisos, reloj, hallazgos y persistencia implementados y revisados en navegador; falta la revisión manual del usuario.
+- [x] Fase 3 completada.
 - [ ] Fase 4 completada.
 - [ ] Fase 5 completada.
 
@@ -422,11 +422,11 @@ No se añaden dependencias. Continúan los avisos conocidos de `THREE.Clock` y t
 
 ### Siguiente trabajo
 
-Cerrar la fase 3 con la revisión manual del usuario y decidir si los avisos al cliente de envíos ya entregados deben seguir en su inicio. Después, continuar con la fase 4.
+Continuar con la fase 4, la revisión independiente.
 
 Leer primero este plan, `README.md` y `src/domain/README.md`. Conservar los recorridos de las fases 1 y 2, los pasos de la demo y sus pruebas.
 
-El documento permite continuar en este chat o abrir uno nuevo sin reconstruir las decisiones de la conversación. Si se cambia de chat, pedir: "Lee IMPLEMENTATION_PLAN.md, README.md y src/domain/README.md. Cierra la fase 3 tras la revisión manual del usuario y continúa con la fase 4, manteniendo el alcance acordado".
+El documento permite continuar en este chat o abrir uno nuevo sin reconstruir las decisiones de la conversación. Si se cambia de chat, pedir: "Lee IMPLEMENTATION_PLAN.md, README.md y src/domain/README.md. Continúa con la fase 4, manteniendo el alcance acordado".
 
 ## Cambio de la vista general: mapa operativo
 
@@ -502,4 +502,4 @@ Revisión en navegador del 3 de noviembre de 2026 sobre el build de producción,
 
 Simplificación del reporte tras la revisión: el reporte muestra tres cifras (entregas a tiempo, en curso fuera de plazo y retraso medio), hasta tres hallazgos de cuellos de botella en lista, con supuestos, limitaciones y envíos plegados en "Detalle", y una tabla de esperas por nodo con barras y el nodo del hallazgo marcado. Se retiran del dominio la duración de tramos por modo, el tránsito por operador y las esperas abiertas por nodo, y los hallazgos de entregas a tiempo, fuera de plazo y despacho pendiente, que repetían cifras o la bandeja. Los filtros pasan a chips con "Todos" y la generación muestra durante 1,8 s los pasos de la consulta y un esqueleto, sin animación con movimiento reducido. Revisado en navegador a 1280 × 800 y 390 × 844.
 
-Pendiente para cerrar la fase: revisión manual del usuario y decidir si un aviso de retención debe seguir en el inicio del cliente cuando el envío ya se ha entregado. Siguen pendientes de fases posteriores el tamaño del fragmento de MapLibre y del dataset y los filtros del listado que se reinician al volver del detalle.
+Fase cerrada a petición del usuario. Los avisos solo siguen en el inicio del cliente mientras su incidencia está activa; en el detalle del envío se conservan como historial. Siguen pendientes de fases posteriores el tamaño del fragmento de MapLibre y del dataset y los filtros del listado que se reinician al volver del detalle.

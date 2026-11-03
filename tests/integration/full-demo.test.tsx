@@ -170,6 +170,20 @@ describe('demo completa', () => {
     const notices = container.querySelector('.customer-notices')
     expect(notices?.textContent).toContain('ATL-TR-004: retenido en la aduana de Mersin')
     expect(container.textContent).not.toContain('Solicitud al operador')
+
+    // Once released, the notice leaves the home page and stays in the shipment detail.
+    await setIdentity('operations-network')
+    await act(async () => demoSeed.steps.forEach(() => useWorkspaceStore.getState().advanceDemo()))
+    await setIdentity('customer-levante')
+    expect(container.querySelector('.customer-notices')).toBeNull()
+    await act(async () =>
+      container
+        .querySelector<HTMLButtonElement>('button[aria-label="Ver detalle de ATL-TR-004"]')!
+        .click(),
+    )
+    expect(container.querySelector('.activity-panel')?.textContent).toContain(
+      'ATL-TR-004: retenido en la aduana de Mersin',
+    )
   })
 
   it('reproduce los pasos con pausa entre ellos y se detiene al pausar', async () => {

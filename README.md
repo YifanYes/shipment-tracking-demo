@@ -6,9 +6,9 @@ El alcance completo y el reparto del trabajo están en [IMPLEMENTATION_PLAN.md](
 
 ## Estado actual
 
-Fases 0, 1 y 2 completadas. La fase 2 incorpora 174 envíos sintéticos (24 activos), cinco escenarios multimodales, incidencias, documentos, vistas de cliente y la estructura del reporte; el detalle está en `IMPLEMENTATION_PLAN.md`. Las pruebas del recorrido de la fase 1 usan `nationalSeed`.
+Fases 0, 1, 2 y 3 completadas. La fase 2 incorpora 174 envíos sintéticos (24 activos), cinco escenarios multimodales, incidencias, documentos, vistas de cliente y la estructura del reporte; el detalle está en `IMPLEMENTATION_PLAN.md`. Las pruebas del recorrido de la fase 1 usan `nationalSeed`.
 
-La fase 3 tiene implementados los pasos de la demo con reproducir, pausar, avanzar y reiniciar; acciones sobre incidencias (aportar documentos, avisar al cliente y pedir información al operador) con registro de actividad; avisos en la vista del cliente; hallazgos y recomendaciones del reporte, y persistencia versionada en `localStorage`. Revisada en navegador; falta la revisión manual.
+La fase 3 incorpora los pasos de la demo con reproducir, pausar, avanzar y reiniciar; acciones sobre incidencias (aportar documentos, avisar al cliente y pedir información al operador) con registro de actividad; avisos en la vista del cliente; hallazgos y recomendaciones del reporte, y persistencia versionada en `localStorage`.
 
 Fase 1: El primer recorrido incluye un envío nacional Madrid → Valencia, un selector de dos identidades, listado y detalle conectados con el mapa de ubicaciones confirmadas, y un evento reproducible de entrega.
 

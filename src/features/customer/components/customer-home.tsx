@@ -1,5 +1,5 @@
 import { CheckCheck, ExternalLink, Package } from 'lucide-react'
-import { notificationsOf } from '@/domain/actions'
+import { currentNotificationsOf } from '@/domain/actions'
 import type { ShipmentView } from '@/domain/contracts'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
@@ -36,7 +36,7 @@ export function CustomerHome({
     )
   const upcoming = upcomingDeliveries(shipments)
   const recent = recentDeliveries(shipments)
-  const notices = notificationsOf(shipments)
+  const notices = currentNotificationsOf(shipments)
   const references = new Map(shipments.map((view) => [view.shipment.id, view.shipment.reference]))
 
   return (
