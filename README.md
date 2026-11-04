@@ -117,7 +117,7 @@ pnpm dlx @railway/cli link --project shipment-tracking-demo --service web
 pnpm dlx @railway/cli up --detach
 ```
 
-`railway up` publica el directorio local sin necesidad de subir antes los commits. El servicio no está conectado a GitHub, de modo que un push no despliega. La cartografía usa las teselas públicas de OpenStreetMap; antes de abrir la demo a tráfico real hay que configurar otro proveedor.
+El servicio está conectado a GitHub: cada push a `main` despliega. `railway up` publica además el directorio local sin subir commits. La cartografía usa las teselas públicas de OpenStreetMap; antes de abrir la demo a tráfico real hay que configurar otro proveedor.
 
 ## Alcance
 

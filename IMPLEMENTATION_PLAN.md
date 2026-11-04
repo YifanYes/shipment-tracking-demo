@@ -422,7 +422,7 @@ No se añaden dependencias. Continúan los avisos conocidos de `THREE.Clock` y t
 
 ### Siguiente trabajo
 
-Las fases del plan están completadas. Pendiente, si la demo se abre a más tráfico: proveedor de cartografía y conexión del servicio de Railway con GitHub.
+Las fases del plan están completadas. Pendiente, si la demo se abre a más tráfico: proveedor de cartografía.
 
 ## Cambio de la vista general: mapa operativo
 
@@ -555,7 +555,7 @@ Build de producción en `vite preview`, localhost, Apple M3 Pro, Chromium headle
 
 ## Resultado de la fase 5
 
-Publicada el 4 de noviembre de 2026 por el agente principal en <https://web-production-ebee6c.up.railway.app>. Railway sustituye a Vercel por decisión del usuario. Proyecto `shipment-tracking-demo`, servicio `web`, entorno `production`, desplegado con `railway up` desde el directorio local. El servicio no está conectado a GitHub.
+Publicada el 4 de noviembre de 2026 por el agente principal en <https://web-production-ebee6c.up.railway.app>. Railway sustituye a Vercel por decisión del usuario. Proyecto `shipment-tracking-demo`, servicio `web`, entorno `production`, desplegado primero con `railway up` y conectado después a GitHub: cada push a `main` despliega.
 
 Se retira `vercel.json` y no se añade `railway.json`, que Railway marca como obsoleto. Railpack detecta Vite y pnpm, ejecuta `pnpm build` y sirve `dist` con Caddy.
 
@@ -577,5 +577,4 @@ Antes de publicar, `pnpm check`, `pnpm test` (27 archivos, 133 pruebas) y `pnpm 
 - La cartografía usa las teselas públicas de OpenStreetMap, no aptas para tráfico alto según su política de uso.
 - La recaída en `index.html` también responde 200 en rutas y recursos inexistentes, como `/assets/no-existe.js`. Una pestaña abierta durante un despliegue puede fallar al pedir un fragmento antiguo; `ErrorBoundary` lo contiene y recargar lo resuelve.
 - Los recursos con hash no llevan `Cache-Control` de larga duración.
-- Publicar requiere ejecutar `railway up`, porque no hay despliegue automático desde GitHub.
 - Se mantienen las limitaciones de la fase 4. No se ha repetido en Railway la medición de rendimiento ni se ha probado en Safari, Firefox o dispositivos reales.
