@@ -14,7 +14,7 @@ Referencia visual: [publicación de Dilum Sanjaya](https://x.com/DilumSanjaya/st
 
 - Aplicación exclusivamente frontend, sin backend, base de datos ni integraciones reales.
 - Datos, empresas, centros, operadores, documentos e identidades sintéticos.
-- Publicación final en Vercel.
+- Publicación final en Railway. Sustituye a Vercel por decisión del usuario del 4 de noviembre de 2026.
 - IA centrada en explicar y resolver incidencias, con evidencias y siguientes acciones.
 - Reporte de IA para detectar cuellos de botella y proponer optimizaciones logísticas.
 - Consulta conversacional aplazada a una ampliación posterior. No se construirá una interfaz de chat en este alcance.
@@ -150,7 +150,7 @@ Las esperas por nodo solo usan hitos completados; lo que sigue abierto pertenece
 | Persistencia       | Memoria y localStorage versionado, con reinicio completo   |
 | Pruebas            | Vitest para reglas y recorridos automatizados en navegador |
 | Calidad de código  | Oxlint, Prettier y Husky con comprobaciones pre-commit     |
-| Publicación        | Build estático en Vercel                                   |
+| Publicación        | Build estático en Railway, servido con Railpack y Caddy    |
 
 Se fijarán versiones compatibles mediante el archivo de bloqueo. La escena se cargará de forma diferida. Los modelos y otros recursos necesarios estarán disponibles desde el proyecto para reducir dependencias externas durante la demo.
 
@@ -276,12 +276,12 @@ Cierre: recorridos críticos, comprobación de tipos y build correctos; sin erro
 Responsable: agente principal.
 
 - Completar README con instalación, comandos, arquitectura, alcance y guion de demo.
-- Compilar y publicar en Vercel con una sesión autorizada.
+- Compilar y publicar en Railway con una sesión autorizada.
 - Comprobar la URL publicada, carga directa, recarga y recursos estáticos.
 - Repetir el recorrido principal y un reporte desde la versión desplegada.
 - Entregar URL, resumen de verificación y limitaciones pendientes.
 
-Cierre: prototipo accesible en Vercel y demo repetible. Si falta acceso a la cuenta, documentar el impedimento exacto y dejar el proyecto listo para desplegar; no declarar completada la publicación.
+Cierre: prototipo accesible en Railway y demo repetible. Si falta acceso a la cuenta, documentar el impedimento exacto y dejar el proyecto listo para desplegar; no declarar completada la publicación.
 
 ## Verificación autónoma
 
@@ -298,7 +298,7 @@ Cada fase cerrará con `pnpm check`, el build y las comprobaciones apropiadas a 
 | Reporte            | Cálculos contrastados con fixtures de resultados conocidos; filtros, muestras y enlaces correctos               |
 | Simulación         | Reloj controlado, avance repetible y reinicio que restaura los mismos escenarios                                |
 | Interacción        | Selección real en escena y paneles; accesibilidad y estados sin datos inspeccionados                            |
-| Despliegue         | URL de Vercel y recorrido principal comprobados sobre la versión publicada                                      |
+| Despliegue         | URL de Railway y recorrido principal comprobados sobre la versión publicada                                     |
 
 Las pruebas usarán una fecha de referencia y datos reproducibles. No dependerán de la hora real ni de esperas largas. La revisión visual complementará las comprobaciones de DOM y de datos.
 
@@ -333,7 +333,7 @@ La prioridad es demostrar seguimiento multimodal, confianza en la información, 
 - [x] Fase 2 completada.
 - [x] Fase 3 completada.
 - [x] Fase 4 completada.
-- [ ] Fase 5 completada.
+- [x] Fase 5 completada.
 
 ### Resultado de la fase 0
 
@@ -422,11 +422,7 @@ No se añaden dependencias. Continúan los avisos conocidos de `THREE.Clock` y t
 
 ### Siguiente trabajo
 
-Continuar con la fase 5, publicación y entrega.
-
-Leer primero este plan, `README.md` y `src/domain/README.md`. Conservar los recorridos de las fases anteriores, los pasos de la demo y sus pruebas.
-
-El documento permite continuar en este chat o abrir uno nuevo sin reconstruir las decisiones de la conversación. Si se cambia de chat, pedir: "Lee IMPLEMENTATION_PLAN.md, README.md y src/domain/README.md. Continúa con la fase 5, manteniendo el alcance acordado".
+Las fases del plan están completadas. Pendiente, si la demo se abre a más tráfico: proveedor de cartografía y conexión del servicio de Railway con GitHub.
 
 ## Cambio de la vista general: mapa operativo
 
@@ -546,7 +542,7 @@ Build de producción en `vite preview`, localhost, Apple M3 Pro, Chromium headle
 | Abrir detalle        | 9           | 28     |
 | Generar reporte\*    | 21          | 33     |
 
-\* Sin los 1,8 s de espera deliberada. Transferencia con gzip: 558 kB propios y unos 111 kB de teselas, más el worker (147 kB) y `map-land.geojson` (95 kB), calculados. Antes de corregir, con 1,6 Mbps y 150 ms de latencia, el mapa tardaba unos 6,9 s; esa medida no se repitió. Localhost no representa la red de Vercel.
+\* Sin los 1,8 s de espera deliberada. Transferencia con gzip: 558 kB propios y unos 111 kB de teselas, más el worker (147 kB) y `map-land.geojson` (95 kB), calculados. Antes de corregir, con 1,6 Mbps y 150 ms de latencia, el mapa tardaba unos 6,9 s; esa medida no se repitió. Localhost no representa la red de producción.
 
 ### Limitaciones documentadas
 
@@ -556,3 +552,30 @@ Build de producción en `vite preview`, localhost, Apple M3 Pro, Chromium headle
 - Dominio, no alcanzable con los datos actuales: una entrega sin `CUSTOMS_RELEASED` deja el envío entregado con la incidencia de aduana activa, y un aviso de retraso con ETA en plazo no deja incidencia.
 - Textos: el mensaje original del operador se conserva aunque repita el título del evento; conviven "ETA" y "Llegada prevista"; la cronología del cliente describe cada evento en presente con su fecha; "Muestra insuficiente" convive con "Ver envíos (1)" en periodos cortos.
 - Solo frontend: `/documents/*.html` responde por URL directa y el dataset completo va en el fragmento principal, de unos 650 kB sin comprimir. El aviso de tamaño del build sigue activo, también por MapLibre.
+
+## Resultado de la fase 5
+
+Publicada el 4 de noviembre de 2026 por el agente principal en <https://web-production-ebee6c.up.railway.app>. Railway sustituye a Vercel por decisión del usuario. Proyecto `shipment-tracking-demo`, servicio `web`, entorno `production`, desplegado con `railway up` desde el directorio local. El servicio no está conectado a GitHub.
+
+Se retira `vercel.json` y no se añade `railway.json`, que Railway marca como obsoleto. Railpack detecta Vite y pnpm, ejecuta `pnpm build` y sirve `dist` con Caddy.
+
+| Criterio           | Resultado sobre la URL publicada                                                                                                 |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| Build              | Railway compila con el lockfile; `index.html` idéntico al build local. Despliegue en estado `SUCCESS`                            |
+| Carga directa      | `/`, `/shipments`, `/shipments/shipment-es-001` y `/analytics` responden 200 con la aplicación                                   |
+| Recarga            | `/shipments/shipment-tr-004` carga con el envío, el paso y la actividad guardados                                                |
+| Recursos estáticos | Fragmentos, favicon, `map-land.geojson` y documentos responden 200 con gzip. Mapa renderizado con teselas                        |
+| Recorrido          | ATL-TR-004: selección en el mapa, documento aportado, aviso registrado, aviso visible para Levante Retail, liberación y reinicio |
+| Perímetro          | Levante Retail no ve envíos ajenos; `/shipments/shipment-gb-015` lo devuelve a su listado                                        |
+| Reporte            | Generado con corte 01 nov, 13:00; hallazgos visibles y `ATL-ES-012` abierto desde el reporte con `Volver al reporte`             |
+| Móvil              | 390 × 844 sin desbordamiento horizontal y sin peticiones fallidas                                                                |
+
+Antes de publicar, `pnpm check`, `pnpm test` (27 archivos, 133 pruebas) y `pnpm build` correctos. El registro de consola quedó vacío en las capturas de carga de escritorio y móvil; no se capturó durante cada acción.
+
+### Limitaciones de la publicación
+
+- La cartografía usa las teselas públicas de OpenStreetMap, no aptas para tráfico alto según su política de uso.
+- La recaída en `index.html` también responde 200 en rutas y recursos inexistentes, como `/assets/no-existe.js`. Una pestaña abierta durante un despliegue puede fallar al pedir un fragmento antiguo; `ErrorBoundary` lo contiene y recargar lo resuelve.
+- Los recursos con hash no llevan `Cache-Control` de larga duración.
+- Publicar requiere ejecutar `railway up`, porque no hay despliegue automático desde GitHub.
+- Se mantienen las limitaciones de la fase 4. No se ha repetido en Railway la medición de rendimiento ni se ha probado en Safari, Firefox o dispositivos reales.

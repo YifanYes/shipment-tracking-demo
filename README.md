@@ -6,7 +6,7 @@ El alcance completo y el reparto del trabajo están en [IMPLEMENTATION_PLAN.md](
 
 ## Estado actual
 
-Fases 0, 1, 2, 3 y 4 completadas. Los resultados de la revisión independiente y sus limitaciones están en `IMPLEMENTATION_PLAN.md`. La fase 2 incorpora 174 envíos sintéticos (24 activos), cinco escenarios multimodales, incidencias, documentos, vistas de cliente y la estructura del reporte; el detalle está en `IMPLEMENTATION_PLAN.md`. Las pruebas del recorrido de la fase 1 usan `nationalSeed`.
+Fases 0 a 5 completadas. La demo está publicada en <https://web-production-ebee6c.up.railway.app>. Los resultados de la revisión independiente y sus limitaciones están en `IMPLEMENTATION_PLAN.md`. La fase 2 incorpora 174 envíos sintéticos (24 activos), cinco escenarios multimodales, incidencias, documentos, vistas de cliente y la estructura del reporte; el detalle está en `IMPLEMENTATION_PLAN.md`. Las pruebas del recorrido de la fase 1 usan `nationalSeed`.
 
 La fase 3 incorpora los pasos de la demo con reproducir, pausar, avanzar y reiniciar; acciones sobre incidencias (aportar documentos, avisar al cliente y pedir información al operador) con registro de actividad; avisos en la vista del cliente; hallazgos y recomendaciones del reporte, y persistencia versionada en `localStorage`.
 
@@ -107,11 +107,35 @@ pnpm dlx shadcn@4.23.0 add dialog
 
 La configuración está en `components.json`. Los estilos específicos de producto deben mantener la coherencia entre paneles y mapa.
 
-## Vercel
+## Despliegue en Railway
 
-`vercel.json` configura Vite, el directorio `dist` y la recarga de rutas de la aplicación. No hay backend, base de datos ni secretos de aplicación.
+La demo está publicada en <https://web-production-ebee6c.up.railway.app>, en el proyecto `shipment-tracking-demo`, servicio `web`. Railway compila la aplicación con Railpack, sin archivos de configuración propios. Railpack detecta Vite y pnpm desde `package.json`, ejecuta `pnpm build` y sirve `dist` con Caddy en el puerto `$PORT`. Las rutas de la aplicación recaen en `index.html`, de modo que los enlaces directos y la recarga funcionan; los archivos de `dist`, como `/documents/*.html`, se sirven tal cual. No hay backend, base de datos ni secretos de aplicación.
 
-No se ha encontrado una sesión local de Vercel ni un proyecto enlazado durante la fase 0. El despliegue y su verificación pública pertenecen a la fase 5 y requieren acceso a la cuenta correspondiente.
+```sh
+pnpm dlx @railway/cli login
+pnpm dlx @railway/cli link --project shipment-tracking-demo --service web
+pnpm dlx @railway/cli up --detach
+```
+
+`railway up` publica el directorio local sin necesidad de subir antes los commits. El servicio no está conectado a GitHub, de modo que un push no despliega. La cartografía usa las teselas públicas de OpenStreetMap; antes de abrir la demo a tráfico real hay que configurar otro proveedor.
+
+## Alcance
+
+Incluye seguimiento multimodal por carretera y mar, incidencias con evidencias y acciones, vistas de operaciones y de cliente con su perímetro, documentos, y un reporte de cuellos de botella. La aplicación es solo frontend: datos, identidades y documentos son sintéticos, y los resultados de IA proceden de reglas y plantillas locales.
+
+Quedan fuera el backend, la autenticación real, las integraciones con operadores, el envío real de avisos, el GPS en directo y la consulta conversacional. El selector de identidad no protege datos: el dataset completo y los documentos viajan al navegador.
+
+## Guion de demo
+
+La demo empieza como `Operaciones · Red`, el 31 de octubre de 2026 a las 11:00.
+
+1. En la vista general, revisar la bandeja de atención y seleccionar `ATL-TR-004`, retenido en aduana por falta de un documento. El mapa destaca su ruta.
+2. Abrir el detalle y consultar la explicación y los eventos que la sustentan.
+3. Pulsar `Aportar documento`. En `Avisar al cliente de la retención`, pulsar `Preparar aviso` y `Registrar aviso`.
+4. Cambiar a `Cliente · Levante Retail`. Solo aparecen sus envíos, con el aviso en el inicio.
+5. Volver a operaciones y avanzar la demo, o pulsar `Reproducir`, hasta `Liberación aduanera de ATL-TR-004`. Aportar el documento no libera el envío; el evento `CUSTOMS_RELEASED` sí.
+6. Abrir el análisis, generar el reporte y abrir los envíos de un hallazgo.
+7. Pulsar `Reiniciar` para repetir la demo.
 
 ## Verificación de la fase 0
 
