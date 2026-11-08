@@ -1,6 +1,8 @@
 import { CheckCheck, ExternalLink, Package } from 'lucide-react'
 import { currentNotificationsOf } from '@/domain/actions'
+import { assessDelayRisk } from '@/domain/risk'
 import type { ShipmentView } from '@/domain/contracts'
+import { AiBadge } from '@/shared/ui/ai-badge'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { formatTime } from '@/shared/lib/format'
@@ -38,13 +40,33 @@ export function CustomerHome({
   const recent = recentDeliveries(shipments)
   const notices = currentNotificationsOf(shipments)
   const references = new Map(shipments.map((view) => [view.shipment.id, view.shipment.reference]))
+  const risks = shipments.flatMap((view) => assessDelayRisk(view, cutoffAt) ?? [])
 
   return (
     <div className="customer-home">
-      {notices.length > 0 && (
+      {notices.length + risks.length > 0 && (
         <section className="customer-section" aria-labelledby="customer-notices-title">
           <h2 id="customer-notices-title">Avisos</h2>
           <ul className="customer-notices">
+            {risks.map((risk) => (
+              <li key={risk.id}>
+                <article className="customer-notice" data-kind="estimate">
+                  <div>
+                    <AiBadge label="Estimación IA" />
+                    <h3>Posible retraso de {references.get(risk.shipmentId)}</h3>
+                    <p>{risk.factors.join(' ')}</p>
+                    <p>Sin confirmar por el operador.</p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onOpenShipment(risk.shipmentId)}
+                  >
+                    Abrir {references.get(risk.shipmentId)}
+                  </Button>
+                </article>
+              </li>
+            ))}
             {notices.map((notice) => (
               <li key={notice.id}>
                 <article className="customer-notice">

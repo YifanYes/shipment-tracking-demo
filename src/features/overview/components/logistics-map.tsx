@@ -35,7 +35,8 @@ export interface LogisticsMapProps {
   selectedSiteId: string | null
   cutoffAt: string
   onSelect: (id: string) => void
-  onSiteSelect: (id: string | null) => void
+  /** Absent when the map shows a single shipment: its sites do not filter anything. */
+  onSiteSelect?: (id: string | null) => void
   onClusterSelect: (ids: string[]) => void
 }
 
@@ -479,7 +480,9 @@ export default function LogisticsMap({
         <output className="map-unavailable">
           <LocateFixed size={26} aria-hidden="true" />
           <strong>El mapa no está disponible</strong>
-          <span>Puedes consultar y seleccionar los envíos en la lista inferior.</span>
+          {onSiteSelect && (
+            <span>Puedes consultar y seleccionar los envíos en la lista inferior.</span>
+          )}
         </output>
       ) : (
         <>
@@ -536,9 +539,10 @@ export default function LogisticsMap({
               className="map-site"
               data-kind={site.kind}
               aria-pressed={pressed}
-              aria-label={`Filtrar envíos por ${site.name}`}
+              disabled={!onSiteSelect}
+              aria-label={onSiteSelect ? `Filtrar envíos por ${site.name}` : site.name}
               title={`${siteKindLabels[site.kind]} · ${site.name}`}
-              onClick={() => onSiteSelect(pressed ? null : site.id)}
+              onClick={() => onSiteSelect?.(pressed ? null : site.id)}
             >
               <span className="map-site-badge" aria-hidden="true">
                 <Icon size={12} />
@@ -589,7 +593,7 @@ export default function LogisticsMap({
                   <strong>{item.shipment.reference}</strong>
                   <small>
                     {location?.placeLabel} ·{' '}
-                    {needsAttention
+                    {needsAttention && onSiteSelect
                       ? 'Revisar'
                       : item.projection.currentStage
                         ? stageLabels[item.projection.currentStage]

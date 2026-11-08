@@ -8,6 +8,9 @@ import type {
   ShipmentNotification,
   ShipmentView,
 } from './contracts'
+import { unresolvedUnknownEventIds } from './attention'
+import { suggestClassification } from './classification'
+import { assessDelayRisk } from './risk'
 
 const HOUR = 3_600_000
 
@@ -124,7 +127,7 @@ export function explainIncident(
 }
 
 /** Every action that applies to the active incidents, whether recorded or not. */
-export function candidateActions(view: IncidentView): RecommendedAction[] {
+export function candidateActions(view: IncidentView, cutoffAt: IsoDateTime): RecommendedAction[] {
   const { shipment, projection } = view
   const reference = shipment.reference
   const customer = view.account?.name ?? 'Cliente'
@@ -222,6 +225,66 @@ export function candidateActions(view: IncidentView): RecommendedAction[] {
         break
     }
   }
+
+  // Nothing received yet: the only possible step is asking the operator of the first leg.
+  if (projection.freshness === 'no_data' && projection.lifecycle !== 'delivered') {
+    const firstLeg = [...shipment.legs].sort((a, b) => a.sequence - b.sequence)[0]
+    actions.push({
+      id: `action-no-data-${shipment.id}-contact_operator`,
+      shipmentId: shipment.id,
+      incidentId: `no-data-${shipment.id}`,
+      kind: 'contact_operator',
+      title: 'Confirmar la recogida con el operador',
+      explanation: 'No se ha recibido ningún evento de este envío.',
+      priority: 'normal',
+      evidence: [{ kind: 'shipment', id: shipment.id }],
+      recipient:
+        view.operators.find((operator) => operator.id === firstLeg?.operatorId)?.name ?? 'Operador',
+      subject: `${reference}: sin eventos`,
+      message: `No hemos recibido eventos de ${reference} (${lane}). ¿Podéis confirmar la fecha de recogida? Entrega comprometida: ${committed}.`,
+    })
+  }
+
+  // The risk only asks for what no incident has asked already: a confirmation from the operator.
+  const risk = assessDelayRisk(view, cutoffAt)
+  if (risk && !actions.some((action) => action.kind === 'contact_operator')) {
+    const operatorId = shipment.legs.find((leg) => leg.id === projection.currentLegId)?.operatorId
+    actions.push({
+      id: `action-${risk.id}-contact_operator`,
+      shipmentId: shipment.id,
+      incidentId: risk.id,
+      kind: 'contact_operator',
+      title: 'Confirmar la ETA con el operador',
+      explanation: `Faltan datos confirmados para avisar a ${customer}.`,
+      priority: risk.level === 'high' ? 'urgent' : 'normal',
+      evidence: risk.evidence,
+      recipient: view.operators.find((operator) => operator.id === operatorId)?.name ?? 'Operador',
+      subject: `${reference}: confirmar llegada`,
+      message: `${risk.factors.join(' ')} ¿Podéis confirmar si se mantiene la llegada antes del ${committed}?`,
+    })
+  }
+
+  for (const eventId of unresolvedUnknownEventIds(view)) {
+    const event = view.events.find((entry) => entry.id === eventId)
+    const suggestion = event && suggestClassification(event)
+    if (!event || !suggestion) continue
+    const incidentId = `event-${event.id}`
+    actions.push({
+      id: `action-${incidentId}-classify_event`,
+      shipmentId: shipment.id,
+      incidentId,
+      kind: 'classify_event',
+      title: `Clasificar ${suggestion.code}`,
+      explanation: `Confianza ${suggestion.confidence}. ${suggestion.rationale} No cambia el estado del envío.`,
+      priority: 'normal',
+      evidence: [{ kind: 'operator_event', id: event.id }],
+      recipient:
+        view.operators.find((operator) => operator.id === event.operatorId)?.name ?? 'Operador',
+      subject: suggestion.interpretation,
+      message: `${suggestion.code}: ${suggestion.interpretation}.`,
+      eventId: event.id,
+    })
+  }
   return actions
 }
 
@@ -246,7 +309,7 @@ export function withActions(view: IncidentView, dataset: DemoDataset, cutoffAt: 
       record.shipmentId === view.shipment.id &&
       Date.parse(record.recordedAt) <= Date.parse(cutoffAt),
   )
-  const candidates = candidateActions(view)
+  const candidates = candidateActions(view, cutoffAt)
   const recorded = new Set(activity.map((record) => record.actionId))
   return {
     incidents: view.incidents.map((incident) => ({
@@ -285,6 +348,7 @@ export function recordAction(input: {
     subject: action.subject,
     message,
     ...(action.documentId ? { documentId: action.documentId } : {}),
+    ...(action.eventId ? { eventId: action.eventId } : {}),
   }
   return applyActivity(input.dataset, [record])
 }

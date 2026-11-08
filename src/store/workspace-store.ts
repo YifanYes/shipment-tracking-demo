@@ -18,7 +18,7 @@ export interface WorkspaceState extends TrackingState {
   toggleSidebar: () => void
   setIdentity: (identityId: string) => void
   selectShipment: (shipmentId: string | null) => void
-  /** Move the clock to the next demo step and release its events. Operations only. */
+  /** Move the clock to the next demo step and release its events, under any identity. */
   advanceDemo: () => void
   /** Automatic advance through the same steps. Stops at the end, on reset or identity change. */
   playing: boolean
@@ -101,7 +101,7 @@ export function createWorkspaceStore(
     advanceDemo: () =>
       set((state) => {
         const next = selectNextStep(state)
-        if (!isOperations(state) || !next) return { playing: false }
+        if (!next) return { playing: false }
         return {
           cutoffAt: next.at,
           dataset: applyScheduledEvents(state.dataset, state.seed.scenarios, next.at),
@@ -110,7 +110,7 @@ export function createWorkspaceStore(
     playing: false,
     setPlaying: (playing) =>
       set((state) => ({
-        playing: playing && isOperations(state) && selectNextStep(state) !== null,
+        playing: playing && selectNextStep(state) !== null,
       })),
     recordAction: (shipmentId, actionId, message) =>
       set((state) => {

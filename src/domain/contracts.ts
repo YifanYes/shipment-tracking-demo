@@ -211,12 +211,30 @@ export interface ShipmentSummary {
   upcoming: number
 }
 
+/** An estimate about the future, never a fact: see `assessDelayRisk`. */
+export interface DelayRisk {
+  id: EntityId
+  shipmentId: EntityId
+  level: 'medium' | 'high'
+  factors: readonly string[]
+  evidence: readonly EvidenceReference[]
+}
+
+/** A proposed meaning for a code outside an operator's vocabulary, pending human review. */
+export interface CodeSuggestion {
+  code: string
+  interpretation: string
+  confidence: 'alta' | 'media' | 'baja'
+  rationale: string
+}
+
 export interface RecommendedAction {
   /** Stable per incident and kind: `action-<incident>-<kind>`. */
   id: EntityId
   shipmentId: EntityId
+  /** The incident it resolves, the delay risk or the unclassified event. */
   incidentId: EntityId
-  kind: 'notify_customer' | 'contact_operator' | 'provide_document'
+  kind: 'notify_customer' | 'contact_operator' | 'provide_document' | 'classify_event'
   title: string
   explanation: string
   priority: 'normal' | 'urgent'
@@ -227,6 +245,7 @@ export interface RecommendedAction {
   subject: string
   message: string
   documentId?: EntityId
+  eventId?: EntityId
 }
 
 /** A local action. Never changes physical facts; providing a document only marks it available. */
@@ -242,6 +261,7 @@ export interface ActivityRecord {
   subject: string
   message: string
   documentId?: EntityId
+  eventId?: EntityId
 }
 
 export interface ShipmentNotification {

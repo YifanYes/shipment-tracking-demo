@@ -169,3 +169,6 @@
   line-height: 1.6;
   color: #4b5b72;
 }
+.customer-notice[data-kind='estimate'] {
+  border-left-color: #7c5fe0;
+}

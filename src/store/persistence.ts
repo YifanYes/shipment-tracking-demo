@@ -5,7 +5,7 @@ import { applyScheduledEvents } from '@/simulation/clock'
 
 export const STORAGE_KEY = 'atlas-demo'
 /** Increase when the snapshot or the seed it refers to changes incompatibly. */
-export const STORAGE_VERSION = 1
+export const STORAGE_VERSION = 2
 
 /** What a session needs to resume: the facts are rebuilt from the seed. */
 export interface DemoSnapshot {

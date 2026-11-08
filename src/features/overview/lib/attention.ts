@@ -1,5 +1,5 @@
 import type { IncidentKind, ShipmentIncident, ShipmentView } from '@/domain/contracts'
-import { attentionReasons } from '@/domain/attention'
+import { attentionReasons, needsAction } from '@/domain/attention'
 
 export const incidentKindLabels: Record<IncidentKind, string> = {
   delay: 'Retraso',
@@ -36,6 +36,13 @@ export interface AttentionLine {
   attention?: ShipmentIncident['attention']
 }
 
+/** The first thing to do on a shipment, urgent actions first. */
+export function nextAction(item: ShipmentView) {
+  return (
+    item.recommendations.find((action) => action.priority === 'urgent') ?? item.recommendations[0]
+  )
+}
+
 export const attentionStateLabels: Record<ShipmentIncident['attention'], string> = {
   unreviewed: 'Sin revisar',
   in_progress: 'En gestión',
@@ -64,22 +71,22 @@ export function attentionLines(item: ShipmentView, cutoffAt: string): AttentionL
 }
 
 /**
- * Shipments that need attention, most severe active incident first, then those with pending
- * recommended actions, then by number of reasons and nearest committed date.
+ * Shipments that need attention. What someone can act on goes first, so a handled incident never
+ * hides a pending one; then the most severe incident, number of reasons and nearest commitment.
  */
 export function attentionQueue(shipments: readonly ShipmentView[], cutoffAt: string) {
   return shipments
     .map((item) => ({
       item,
       reasons: attentionReasons(item, cutoffAt).length,
-      pending: item.recommendations.length > 0,
+      pending: needsAction(item, cutoffAt),
       severity: Math.max(0, ...activeIncidents(item).map((entry) => severityRank[entry.severity])),
     }))
     .filter(({ reasons }) => reasons > 0)
     .sort(
       (a, b) =>
-        b.severity - a.severity ||
         Number(b.pending) - Number(a.pending) ||
+        b.severity - a.severity ||
         b.reasons - a.reasons ||
         Date.parse(a.item.shipment.committedDeliveryAt) -
           Date.parse(b.item.shipment.committedDeliveryAt) ||

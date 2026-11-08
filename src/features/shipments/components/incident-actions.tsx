@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { FilePlus2, Mail, MessageSquareShare } from 'lucide-react'
 import type { RecommendedAction } from '@/domain/contracts'
+import { AiBadge } from '@/shared/ui/ai-badge'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import {
@@ -20,16 +21,19 @@ const confirmLabels: Record<RecommendedAction['kind'], string> = {
   notify_customer: 'Registrar aviso',
   contact_operator: 'Registrar solicitud',
   provide_document: 'Aportar documento',
+  classify_event: 'Aceptar propuesta',
 }
 
 const resultTitles: Record<RecommendedAction['kind'], string> = {
   notify_customer: 'Aviso registrado',
   contact_operator: 'Solicitud registrada',
   provide_document: 'Documento aportado',
+  classify_event: 'Código clasificado',
 }
 
 /** The button of a recorded action disappears: focus continues at the incidents heading. */
-const incidentsHeading = () => document.getElementById('incidents-title')
+const incidentsHeading = () =>
+  document.getElementById('incidents-title') ?? document.getElementById('risk-title')
 
 export function IncidentActions({
   actions,
@@ -122,7 +126,10 @@ function MessageDialog({
         >
           <DialogHeader>
             <DialogTitle>{action.title}</DialogTitle>
-            <DialogDescription>Para: {action.recipient}</DialogDescription>
+            <DialogDescription className="action-recipient">
+              Para: {action.recipient}
+              <AiBadge label="Borrador IA" />
+            </DialogDescription>
           </DialogHeader>
           <p className="action-subject">{action.subject}</p>
           <label htmlFor={fieldId}>Mensaje</label>

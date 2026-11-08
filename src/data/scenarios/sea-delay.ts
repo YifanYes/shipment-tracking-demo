@@ -60,7 +60,7 @@ export const seaDelay: DataPart = {
       locationId: 'port-barcelona',
     }),
     event(2, 'NOON_REPORT', -hours(2), {
-      message: 'Noon report: Gulf of Lion, reduced speed due to weather.',
+      message: 'Noon report: Gulf of Lion.',
       locationId: 'waypoint-sea-golfo-leon',
     }),
   ],
@@ -71,6 +71,15 @@ export const seaDelayScenario: DemoScenario = {
   name: 'Retraso marítimo con nueva ETA',
   shipmentIds: [shipment.id],
   scheduledEvents: [
+    // The ETA still holds, but the message anticipates what the operator confirms an hour later.
+    scheduled(
+      30,
+      event(2, 'NOON_REPORT', 25, {
+        message: 'Position report: Gulf of Lion, reduced speed due to weather.',
+        locationId: 'waypoint-sea-golfo-leon',
+        key: 'noon-report-weather',
+      }),
+    ),
     scheduled(
       90,
       event(2, 'DELAY_NOTICE', 85, {

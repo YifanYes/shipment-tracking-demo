@@ -108,7 +108,13 @@ describe('primer recorrido de Atlas', () => {
     expect(window.location.pathname).toBe('/shipments/shipment-es-001')
     expect(document.title).toBe('ATL-ES-001 | Atlas')
     expect(container.querySelector('.shipment-row')?.closest('[hidden]')).not.toBeNull()
-    expect(container.querySelector('[data-testid="map"]')).toBeNull()
+    expect(container.querySelector('.network-panel')).toBeNull()
+    await act(async () => {
+      await vi.dynamicImportSettled()
+    })
+    expect(container.querySelector('.shipment-route-map')?.textContent).toContain(
+      'Marcador ATL-ES-001',
+    )
     await click('Volver a envíos')
     expect(window.location.pathname).toBe('/shipments')
     expect(container.querySelector('#detail-title')).toBeNull()

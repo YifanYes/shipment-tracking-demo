@@ -8,6 +8,7 @@ const actionLabels: Record<ActivityRecord['action'], string> = {
   notify_customer: 'Aviso al cliente',
   contact_operator: 'Solicitud al operador',
   provide_document: 'Documento aportado',
+  classify_event: 'Código clasificado',
 }
 
 /** Operations see the activity log; customers see only the notices addressed to them. */

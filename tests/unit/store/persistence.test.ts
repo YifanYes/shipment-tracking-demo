@@ -67,7 +67,7 @@ describe('persistencia versionada', () => {
       '{no es json',
       JSON.stringify({ ...valid, version: STORAGE_VERSION + 1 }),
       JSON.stringify({ ...valid, identityId: 'missing' }),
-      JSON.stringify({ ...valid, cutoffAt: '2026-10-31T10:30:00.000Z' }),
+      JSON.stringify({ ...valid, cutoffAt: '2026-10-31T10:31:00.000Z' }),
       JSON.stringify({ ...valid, activity: [{ id: 'activity-x', action: 'delete_shipment' }] }),
     ]) {
       const storage = memoryStorage({ [STORAGE_KEY]: raw })
@@ -112,15 +112,14 @@ describe('persistencia versionada', () => {
 })
 
 describe('reproducción', () => {
-  it('solo reproduce operaciones con pasos pendientes y se detiene al cambiar de identidad', () => {
+  it('reproduce con pasos pendientes y se detiene al cambiar de identidad', () => {
     const store = createWorkspaceStore(demoSeed)
     store.getState().setPlaying(true)
     expect(store.getState().playing).toBe(true)
     store.getState().setIdentity('customer-levante')
     expect(store.getState().playing).toBe(false)
     store.getState().setPlaying(true)
-    expect(store.getState().playing).toBe(false)
-    store.getState().setIdentity('operations-network')
+    expect(store.getState().playing).toBe(true)
     demoSeed.steps.forEach(() => store.getState().advanceDemo())
     store.getState().setPlaying(true)
     expect(store.getState().playing).toBe(false)

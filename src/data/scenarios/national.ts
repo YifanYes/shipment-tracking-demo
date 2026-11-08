@@ -1,9 +1,11 @@
 import type { DemoDataset, DemoScenario } from '@/domain/contracts'
+import { at, clockAt, hours } from './builders'
+import { referenceTime } from './network'
 import madridValenciaRoute from './routes/madrid-valencia.json'
 
 export const nationalDataset: DemoDataset = {
   revision: 1,
-  referenceTime: '2026-10-31T10:00:00.000Z',
+  referenceTime,
   accounts: [
     { id: 'account-norte', name: 'Norte Hogar' },
     { id: 'account-levante', name: 'Levante Retail' },
@@ -57,8 +59,8 @@ export const nationalDataset: DemoDataset = {
       accountId: 'account-norte',
       originSiteId: 'site-madrid',
       destinationLocationId: 'destination-valencia',
-      createdAt: '2026-10-31T06:00:00.000Z',
-      committedDeliveryAt: '2026-10-31T14:00:00.000Z',
+      createdAt: at(-hours(4)),
+      committedDeliveryAt: at(hours(4)),
       legs: [
         {
           id: 'leg-es-001-road',
@@ -89,8 +91,8 @@ export const nationalDataset: DemoDataset = {
       rawCode: 'PICKED_UP',
       rawMessage: 'Mercancía recogida en el centro de Madrid.',
       payload: {},
-      occurredAt: '2026-10-31T08:00:00.000Z',
-      receivedAt: '2026-10-31T08:02:00.000Z',
+      occurredAt: at(-hours(2)),
+      receivedAt: at(-hours(2) + 2),
       locationId: 'site-madrid',
     },
     {
@@ -99,11 +101,10 @@ export const nationalDataset: DemoDataset = {
       legId: 'leg-es-001-road',
       operatorId: 'operator-iberia',
       rawCode: 'ON_ROUTE',
-      rawMessage:
-        'En ruta por la A-3 a la altura de Perales de Tajuña. Llegada prevista a las 13:00, hora peninsular.',
-      payload: { arrivalAt: '2026-10-31T12:00:00.000Z' },
-      occurredAt: '2026-10-31T09:59:00.000Z',
-      receivedAt: '2026-10-31T09:59:10.000Z',
+      rawMessage: `En ruta por la A-3 a la altura de Perales de Tajuña. Llegada prevista a las ${clockAt(hours(2))}, hora peninsular.`,
+      payload: { arrivalAt: at(hours(2)) },
+      occurredAt: at(-1),
+      receivedAt: new Date(Date.parse(at(-1)) + 10_000).toISOString(),
       locationId: 'waypoint-a3-perales',
     },
   ],
@@ -125,8 +126,8 @@ export const nationalScenario: DemoScenario = {
         rawCode: 'DELIVERED',
         rawMessage: 'Entrega confirmada en el almacén de Valencia.',
         payload: {},
-        occurredAt: '2026-10-31T12:00:00.000Z',
-        receivedAt: '2026-10-31T12:00:00.000Z',
+        occurredAt: at(hours(2)),
+        receivedAt: at(hours(2)),
         locationId: 'destination-valencia',
       },
     },

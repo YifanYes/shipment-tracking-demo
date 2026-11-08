@@ -2,7 +2,7 @@ import type { DemoDataset, EntityId, IsoDateTime, ShipmentView, ShipmentSummary 
 import { shipmentEvents } from './events'
 import { documentsOf, locationsById, trackShipment } from './projection'
 import { canViewShipment } from './visibility'
-import { attentionReasons } from './attention'
+import { needsAction } from './attention'
 import { withActions } from './actions'
 
 export interface TrackingState {
@@ -76,7 +76,7 @@ export function selectSummary(
   return {
     active: views.filter(({ projection }) => projection.lifecycle === 'active').length,
     delivered: views.filter(({ projection }) => projection.lifecycle === 'delivered').length,
-    attention: views.filter((item) => attentionReasons(item, cutoffAt).length > 0).length,
+    attention: views.filter((item) => needsAction(item, cutoffAt)).length,
     upcoming: views.filter(
       ({ projection }) =>
         projection.lifecycle !== 'delivered' &&

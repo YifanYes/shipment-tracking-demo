@@ -22,7 +22,7 @@ export default function LogisticsMapMock({
           key={site.id}
           data-kind={site.kind}
           aria-pressed={selectedSiteId === site.id}
-          onClick={() => onSiteSelect(selectedSiteId === site.id ? null : site.id)}
+          onClick={() => onSiteSelect?.(selectedSiteId === site.id ? null : site.id)}
         >
           Filtrar envíos por {site.name}
         </button>

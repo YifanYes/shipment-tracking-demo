@@ -1,6 +1,10 @@
 import { CheckCheck, Package, Radio, Truck } from 'lucide-react'
 import type { ShipmentView } from '@/domain/contracts'
 import { formatTime } from '@/shared/lib/format'
+import { AiBadge } from '@/shared/ui/ai-badge'
+import { Button } from '@/shared/ui/button'
+import { toastManager } from '@/shared/ui/toast'
+import type { RecordAction } from './incident-actions'
 import {
   formatDuration,
   operatorName,
@@ -12,15 +16,18 @@ export function ShipmentEvents({
   view,
   entries,
   audience,
+  onRecordAction,
 }: {
   view: ShipmentView
   entries: readonly TimelineEntry[]
   audience: Audience
+  /** Operations only: accepts a proposed classification. */
+  onRecordAction?: RecordAction
 }) {
   return (
     <section className="detail-panel events-panel" aria-labelledby="events-title">
       <div className="detail-panel-heading">
-        <h3 id="events-title">
+        <h3 id="events-title" tabIndex={-1}>
           <Radio size={18} aria-hidden="true" />
           {audience === 'operations' ? 'Eventos del operador' : 'Actualizaciones'}
         </h3>
@@ -36,6 +43,10 @@ export function ShipmentEvents({
                   : stage
                     ? Truck
                     : Radio
+            const suggestion = view.recommendations.find(
+              (action) => action.kind === 'classify_event' && action.eventId === event.id,
+            )
+            const classified = view.activity.find((record) => record.eventId === event.id)
             const receivedDelay = Math.round(
               (Date.parse(event.receivedAt) - Date.parse(event.occurredAt)) / 60_000,
             )
@@ -56,7 +67,7 @@ export function ShipmentEvents({
                     <time dateTime={event.occurredAt}>{formatTime(event.occurredAt)}</time>
                     {index === 0 && <span className="event-latest-label">Último evento</span>}
                   </div>
-                  <h4>{title}</h4>
+                  <h4>{classified ? `Clasificado: ${classified.subject}` : title}</h4>
                   {audience === 'operations' ? (
                     <>
                       <p className="event-message">{event.rawMessage}</p>
@@ -64,10 +75,34 @@ export function ShipmentEvents({
                         <span>{operatorName(view, event.operatorId)}</span>
                         <code>{event.rawCode}</code>
                       </div>
-                      {details.length > 0 && (
+                      {details.length > 0 && !classified && (
                         <p className="event-normalized" data-known={known}>
                           {details.join(' · ')}
                         </p>
+                      )}
+                      {suggestion && onRecordAction && (
+                        <div className="event-suggestion">
+                          <div>
+                            <AiBadge label="Propuesta IA" />
+                            <strong>{suggestion.subject}</strong>
+                            <p>{suggestion.explanation}</p>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              onRecordAction(suggestion.id)
+                              toastManager.add({
+                                title: 'Código clasificado',
+                                description: suggestion.message,
+                                timeout: 5000,
+                              })
+                              document.getElementById('events-title')?.focus()
+                            }}
+                          >
+                            Aceptar propuesta
+                          </Button>
+                        </div>
                       )}
                       <p className="event-received">
                         Recibido{' '}

@@ -24,6 +24,7 @@ import {
   attentionStateLabels,
   severityLabels,
   incidentKindLabels,
+  nextAction,
 } from '../lib/attention'
 import {
   type LegState,
@@ -292,6 +293,7 @@ export function ShipmentOverview({ shipments, cutoffAt, onOpenShipment }: Props)
           <div className="attention-list">
             {attention.map((item) => {
               const lines = attentionLines(item, cutoffAt)
+              const next = nextAction(item)
               return (
                 <button
                   type="button"
@@ -319,6 +321,7 @@ export function ShipmentOverview({ shipments, cutoffAt, onOpenShipment }: Props)
                       </span>
                     ))}
                   </span>
+                  {next && <span className="attention-next">Siguiente: {next.title}</span>}
                   <span className="attention-item-action">
                     Localizar envío <ArrowRight size={13} aria-hidden="true" />
                   </span>

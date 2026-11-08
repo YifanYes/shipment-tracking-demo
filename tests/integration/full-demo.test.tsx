@@ -114,6 +114,8 @@ describe('demo completa', () => {
     useWorkspaceStore.getState().setIdentity('operations-network')
     await mount()
     await advance()
+    expect(document.body.textContent).toContain('Posible retraso de ATL-IT-003')
+    await advance()
     expect(document.body.textContent).toContain('ATL-IT-003 llegará tarde a Milán')
     expect(document.body.textContent).toContain('Además, 1 envío entregado.')
     expect(
@@ -138,7 +140,7 @@ describe('demo completa', () => {
     await act(async () =>
       container.querySelector<HTMLButtonElement>('button[aria-label^="Siguiente paso"]')!.click(),
     )
-    expect(document.body.textContent).toContain('ATL-IT-003 llegará tarde')
+    expect(document.body.textContent).toContain('Posible retraso de ATL-IT-003')
     await setIdentity('customer-levante')
     await act(async () => {
       await new Promise((resolve) => setTimeout(resolve, 300))

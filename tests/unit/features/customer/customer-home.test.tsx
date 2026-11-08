@@ -25,6 +25,31 @@ const render = (shipments: readonly ShipmentView[]) => {
 }
 
 describe('inicio del cliente', () => {
+  it('avisa de un posible retraso como estimación, sin que operaciones intervenga', () => {
+    const slowed = {
+      ...plannedEstimate,
+      projection: {
+        ...plannedEstimate.projection,
+        lifecycle: 'active' as const,
+        eta: {
+          kind: 'estimate' as const,
+          earliestAt: viewCutoffAt,
+          latestAt: new Date(
+            Date.parse(plannedEstimate.shipment.committedDeliveryAt) + 3_600_000,
+          ).toISOString(),
+          issuedAt: viewCutoffAt,
+          assumptions: [],
+          evidence: [],
+        },
+      },
+    }
+    const { container } = render([slowed])
+    const notice = container.querySelector('.customer-notice[data-kind="estimate"]')
+    expect(notice?.textContent).toContain('Estimación IA')
+    expect(notice?.textContent).toContain(`Posible retraso de ${slowed.shipment.reference}`)
+    expect(notice?.textContent).toContain('Sin confirmar por el operador.')
+  })
+
   it('ordena las próximas entregas por llegada prevista y deja al final las que no tienen ETA', () => {
     const { container } = render([staleUnknown, seaDelayed, plannedEstimate, delivered])
     const upcoming = [...container.querySelectorAll('.customer-cards h3')].map((h) => h.textContent)

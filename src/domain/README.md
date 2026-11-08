@@ -19,7 +19,7 @@
 
 ## Contratos fijados al cerrar la fase 1
 
-- `DemoDataset` conserva los hechos originales. `referenceTime` es el inicio del reloj; `TrackingState.cutoffAt` es la fecha de corte actual. `revision` aumenta cuando se incorporan eventos nuevos.
+- `DemoDataset` conserva los hechos originales. `referenceTime` es el inicio del reloj: las 11:00 de hoy en Madrid; `TrackingState.cutoffAt` es la fecha de corte actual. `revision` aumenta cuando se incorporan eventos nuevos.
 - `canViewShipment` aplica cuenta exacta al cliente y la intersección de centros y cuentas a operaciones. Una identidad desconocida o un perímetro vacío no dan acceso.
 - `selectVisibleShipments` aplica ese perímetro antes de devolver `ShipmentView[]`. Cada vista reúne el envío, su proyección, sus eventos, ubicaciones, operadores y documentos asociados. Listado, detalle y mapa reciben estas vistas, sin consultar el dataset completo.
 - `selectSelectedShipment` devuelve `ShipmentView | null` y vuelve a comprobar el perímetro. `selectSummary` deriva activos, entregados, envíos que requieren atención y próximas entregas de las vistas ya autorizadas. Próximas entregas cuenta ETA del operador dentro de las siguientes 24 horas, excluyendo entregados. Atención incluye incidencias, información antigua o ausente, códigos pendientes de clasificar y entregas fuera de plazo. La vista general cuenta además las llegadas de hoy según Europe/Madrid, sin cambiar el contador de próximas 24 horas.
@@ -38,7 +38,7 @@ Las métricas históricas, las incidencias y el resto de adaptadores se implemen
 ## Contratos de la fase 2
 
 - `DemoSeed` reúne el dataset inicial y los escenarios. `data/scenarios/index.ts` exporta `demoSeed`, el dataset completo, y `nationalSeed`, el envío de la fase 1 que conservan sus pruebas. El store recibe una semilla y `resetDemo` vuelve a ella.
-- `applyScheduledEvents(dataset, scenarios, cutoffAt)` incorpora los eventos programados liberados hasta la fecha de corte, una sola vez por ID. `DemoSeed.steps` define los pasos con nombre de la demo; `nextDemoStep` devuelve el siguiente y `advanceDemo` mueve el reloj a su hora. Solo operaciones controla la demo.
+- `applyScheduledEvents(dataset, scenarios, cutoffAt)` incorpora los eventos programados liberados hasta la fecha de corte, una sola vez por ID. `DemoSeed.steps` define los pasos con nombre de la demo; `nextDemoStep` devuelve el siguiente y `advanceDemo` mueve el reloj a su hora. Cualquier identidad puede avanzar la demo, para ver en la vista del cliente cómo llega un aviso.
 - El escenario `background-operations` mantiene el resto de envíos activos: completa sus hitos hasta la ETA comunicada, o antes del compromiso si no la hay, y envía avisos de posición cada dos horas como máximo.
 - `attentionReasons` ignora los códigos desconocidos superados por un evento conocido posterior del mismo tramo. En un envío entregado solo cuentan las incidencias abiertas.
 - `ShipmentProjection.legStages` contiene el hito más avanzado confirmado de cada tramo. Detalle y mapa lo usan en lugar de recalcular hitos.
@@ -47,7 +47,7 @@ Las métricas históricas, las incidencias y el resto de adaptadores se implemen
 
 ### Datos de la fase 2
 
-- `data/scenarios/` separa la red (`network.ts`), las rutas (`routes.ts`), los cinco escenarios, el resto de envíos activos (`active.ts`) y el histórico (`history.ts`). `buildDemoSeed()` es puro: dos construcciones son iguales. El histórico usa un PRNG con semilla fija y fechas relativas a `referenceTime`.
+- `data/scenarios/` separa la red (`network.ts`), las rutas (`routes.ts`), los cinco escenarios, el resto de envíos activos (`active.ts`) y el histórico (`history.ts`). Las fechas de los datos son relativas a `referenceTime`: dos construcciones del mismo día son iguales y un progreso guardado de otro día se descarta. El histórico usa un PRNG con semilla fija y fechas relativas a `referenceTime`.
 - Los trazados por carretera proceden de OSRM, simplificados a unos 35 m (60 m por encima de 600 km). Los marítimos son itinerarios sintéticos por mar abierto y estrechos. Los envíos históricos no tienen trazado.
 - Los eventos programados se reciben exactamente al liberarse (`referenceTime + offsetMinutes`); la fecha del hecho puede ser anterior.
 
@@ -101,5 +101,14 @@ Las métricas históricas, las incidencias y el resto de adaptadores se implemen
 
 ### Reloj y persistencia
 
-- `playing` avanza un paso cada `PLAY_STEP_MS` (5 s) con el mismo avance, aviso y final que el botón. Se detiene al terminar, al pausar, al reiniciar o al cambiar de identidad, y solo operaciones puede activarlo.
-- `store/persistence.ts` guarda en `localStorage` (`atlas-demo`, versión 1) la identidad, el paso, los registros de actividad y el estado de la sidebar. Al cargar, reconstruye el dataset desde la semilla, los eventos hasta ese paso y los registros. Los registros se reproducen en orden con `recordAction`, en el paso y con la identidad que los hizo. Una versión distinta, JSON inválido, una identidad o un paso desconocidos o un registro que esa regla no habría producido descartan el estado guardado. `resetDemo` guarda el estado inicial.
+- `playing` avanza un paso cada `PLAY_STEP_MS` (5 s) con el mismo avance, aviso y final que el botón. Se detiene al terminar, al pausar, al reiniciar o al cambiar de identidad.
+- `store/persistence.ts` guarda en `localStorage` (`atlas-demo`, versión 2) la identidad, el paso, los registros de actividad y el estado de la sidebar. Al cargar, reconstruye el dataset desde la semilla, los eventos hasta ese paso y los registros. Los registros se reproducen en orden con `recordAction`, en el paso y con la identidad que los hizo. Una versión distinta, JSON inválido, una identidad o un paso desconocidos o un registro que esa regla no habría producido descartan el estado guardado. `resetDemo` guarda el estado inicial.
+
+## Capa de IA
+
+Los resultados son deterministas en este prototipo. La interfaz los marca con `AiBadge`.
+
+- `risk.ts`: `assessDelayRisk` estima el riesgo de retraso de un envío abierto sin retraso confirmado. Pondera retenciones y falta de noticias cerca del compromiso, mensajes del operador posteriores a su última ETA, intervalos estimados y márgenes de menos de 2 h. Solo devuelve riesgo medio (desde 0,5) o alto (desde 0,7). Es siempre una estimación: no cambia estado, ETA ni incidencias, y desaparece cuando el operador confirma un retraso. Llega al cliente sin intervención de operaciones.
+- `classification.ts`: `suggestClassification` propone un significado para un código desconocido a partir de su mensaje. Aceptarlo registra una actividad `classify_event` y cierra la tarea de clasificación, sin añadir hitos.
+- `candidateActions` añade dos acciones sin incidencia: confirmar la ETA si el riesgo no tiene ya una solicitud al operador, y confirmar la recogida si no se ha recibido ningún evento.
+- `needsAction` separa lo gestionable de lo que espera al operador: un envío con todas sus acciones registradas sigue en la bandeja y en el mapa, pero sale del contador y pasa al final de la cola.

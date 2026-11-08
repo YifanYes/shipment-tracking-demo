@@ -843,3 +843,20 @@
     flex-wrap: wrap;
   }
 }
+.attention-item .attention-next {
+  font-weight: 600;
+  color: #344862 !important;
+}
+.shipment-route-map {
+  overflow: hidden;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.shipment-route-map .logistics-map-frame {
+  height: 320px;
+  border-block: 0;
+}
+.map-site:disabled {
+  cursor: default;
+}

@@ -12,6 +12,7 @@ import {
   defaultAnalyticsFilters,
   filterReportShipments,
 } from '@/domain/analytics'
+import { AiBadge } from '@/shared/ui/ai-badge'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { formatTime } from '@/shared/lib/format'
@@ -394,7 +395,10 @@ function ReportView({
 
       {report.findings.length > 0 && (
         <section className="report-group" aria-labelledby="report-findings-title">
-          <h3 id="report-findings-title">Hallazgos</h3>
+          <h3 id="report-findings-title" className="report-findings-title">
+            Hallazgos
+            <AiBadge />
+          </h3>
           <ol className="report-findings">
             {report.findings.map((finding) => (
               <FindingRow key={finding.id} finding={finding} shipments={shipments} {...links} />

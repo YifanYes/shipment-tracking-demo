@@ -20,8 +20,6 @@ describe('perímetro de la sesión', () => {
     expect(
       selectSummary(selectVisibleShipments(store.getState()), store.getState().cutoffAt),
     ).toEqual({ active: 0, delivered: 0, attention: 0, upcoming: 0 })
-    store.getState().advanceDemo()
-    expect(store.getState().dataset).toBe(nationalDataset)
     store.getState().setIdentity('operations-madrid')
     expect(store.getState().selectedShipmentId).toBeNull()
     store.getState().selectShipment('missing')

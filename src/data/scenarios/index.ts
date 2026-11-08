@@ -1,7 +1,7 @@
 import type { DemoDataset, DemoSeed, DemoStep } from '@/domain/contracts'
 import { active } from './active'
 import { buildBackgroundScenario } from './background'
-import type { DataPart } from './builders'
+import { clockAt, dateTimeAt, hours, type DataPart } from './builders'
 import { customsHold, customsHoldScenario } from './customs-hold'
 import { buildHistory } from './history'
 import { multimodal, multimodalScenario } from './multimodal'
@@ -23,13 +23,23 @@ export const nationalSeed: DemoSeed = {
  */
 export const demoSteps: readonly DemoStep[] = [
   {
+    id: 'vessel-slowdown',
+    label: 'Parte del buque de ATL-IT-003',
+    offsetMinutes: 30,
+    story: {
+      shipmentId: 'shipment-it-003',
+      title: 'Posible retraso de ATL-IT-003',
+      detail: 'Velocidad reducida por mal tiempo. Estimación: el operador mantiene su ETA.',
+    },
+  },
+  {
     id: 'sea-delay-notice',
     label: 'Retraso marítimo de ATL-IT-003',
     offsetMinutes: 90,
     story: {
       shipmentId: 'shipment-it-003',
       title: 'ATL-IT-003 llegará tarde a Milán',
-      detail: 'Nueva ETA: 2 nov, 07:00. Comprometida: 1 nov, 23:00.',
+      detail: `Nueva ETA: ${dateTimeAt(hours(44))}. Comprometida: ${dateTimeAt(hours(36))}.`,
     },
   },
   {
@@ -39,7 +49,7 @@ export const demoSteps: readonly DemoStep[] = [
     story: {
       shipmentId: 'shipment-es-005',
       title: 'ATL-ES-005 vuelve a informar',
-      detail: 'Sigue en ruta. Entrega prevista a las 18:30.',
+      detail: `Sigue en ruta. Entrega prevista a las ${clockAt(hours(7.5))}.`,
     },
   },
   { id: 'afternoon-deliveries', label: 'Entregas de la tarde', offsetMinutes: 480 },
@@ -50,7 +60,7 @@ export const demoSteps: readonly DemoStep[] = [
     story: {
       shipmentId: 'shipment-tr-004',
       title: 'ATL-TR-004 sale de la aduana',
-      detail: 'Entrega prevista en Adana a las 17:00, con retraso.',
+      detail: `Entrega prevista en Adana a las ${clockAt(hours(30))}, con retraso.`,
     },
   },
   { id: 'international-deliveries', label: 'Entregas internacionales', offsetMinutes: 1740 },

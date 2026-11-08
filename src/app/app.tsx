@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { arrivalsToday } from '@/domain/attention'
 import { selectSummary, selectVisibleShipments } from '@/domain/selectors'
-import { OverviewMetrics, ShipmentOverview } from '@/features/overview'
+import { OverviewMetrics, ShipmentOverview, ShipmentRouteMap } from '@/features/overview'
 import { AnalyticsReport } from '@/features/analytics'
 import { CustomerHome } from '@/features/customer'
 import { ShipmentDetail, ShipmentList } from '@/features/shipments'
@@ -90,24 +90,20 @@ export function App() {
           collapsed={sidebarCollapsed}
           items={navigationFor(identity.role)}
           onNavigate={setView}
-          demoControls={
-            identity.role === 'operations'
-              ? {
-                  nextStep: nextStep && { ...nextStep, label: stepLabel(nextStep, shipments) },
-                  playing: state.playing,
-                  onTogglePlay: () => {
-                    if (state.playing) return state.setPlaying(false)
-                    state.setPlaying(true)
-                    advance()
-                  },
-                  onAdvance: advance,
-                  onReset: () => {
-                    toastManager.close()
-                    state.resetDemo()
-                  },
-                }
-              : null
-          }
+          demoControls={{
+            nextStep: nextStep && { ...nextStep, label: stepLabel(nextStep, shipments) },
+            playing: state.playing,
+            onTogglePlay: () => {
+              if (state.playing) return state.setPlaying(false)
+              state.setPlaying(true)
+              advance()
+            },
+            onAdvance: advance,
+            onReset: () => {
+              toastManager.close()
+              state.resetDemo()
+            },
+          }}
         />
 
         <div className="main-shell">
@@ -172,6 +168,11 @@ export function App() {
                 cutoffAt={state.cutoffAt}
                 audience={audience}
                 backLabel={state.backView === 'analytics' ? 'Volver al reporte' : 'Volver a envíos'}
+                routeMap={
+                  selected.projection.lifecycle === 'delivered' ? undefined : (
+                    <ShipmentRouteMap item={selected} cutoffAt={state.cutoffAt} />
+                  )
+                }
                 onBack={() => setView(state.backView)}
                 onOpenShipment={state.selectShipment}
                 onRecordAction={(actionId, message) =>

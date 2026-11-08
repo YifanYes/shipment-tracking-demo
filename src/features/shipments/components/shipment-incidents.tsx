@@ -1,5 +1,6 @@
 import { AlertTriangle, Link2 } from 'lucide-react'
 import type { EvidenceReference, ShipmentIncident, ShipmentView } from '@/domain/contracts'
+import { AiBadge } from '@/shared/ui/ai-badge'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { formatTime } from '@/shared/lib/format'
@@ -139,6 +140,7 @@ export function ShipmentIncidents({
               </dl>
               {explanation && (
                 <div className="incident-explanation">
+                  <AiBadge />
                   <p>{explanation.summary}</p>
                   <p>{explanation.impact}</p>
                 </div>

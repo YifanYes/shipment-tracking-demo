@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, type ReactNode } from 'react'
 import { ArrowLeft, CalendarDays, CheckCheck, Clock3, MapPin, Ship, Truck } from 'lucide-react'
 import type { ShipmentView } from '@/domain/contracts'
 import { Badge } from '@/shared/ui/badge'
@@ -26,6 +26,7 @@ import type { RecordAction } from './incident-actions'
 import { ShipmentEvents } from './shipment-events'
 import { ShipmentIncidents } from './shipment-incidents'
 import { ShipmentJourney } from './shipment-journey'
+import { ShipmentRisk } from './shipment-risk'
 
 export function ShipmentDetail({
   item,
@@ -36,6 +37,7 @@ export function ShipmentDetail({
   onOpenShipment,
   onRecordAction,
   actorName = (id) => id,
+  routeMap,
 }: {
   item: ShipmentView
   cutoffAt: string
@@ -45,6 +47,8 @@ export function ShipmentDetail({
   onOpenShipment?: (id: string) => void
   onRecordAction?: RecordAction
   actorName?: (identityId: string) => string
+  /** The map belongs to another feature, so the composition root provides it. */
+  routeMap?: ReactNode
 }) {
   const headingRef = useRef<HTMLHeadingElement>(null)
   const { shipment, projection, operators, account } = item
@@ -133,6 +137,15 @@ export function ShipmentDetail({
         </div>
       </div>
 
+      <ShipmentRisk
+        view={item}
+        audience={audience}
+        cutoffAt={cutoffAt}
+        onRecordAction={audience === 'operations' ? onRecordAction : undefined}
+      />
+
+      {routeMap}
+
       <ShipmentIncidents
         view={item}
         audience={audience}
@@ -148,7 +161,12 @@ export function ShipmentDetail({
           <ShipmentDocuments documents={item.documents} />
           <ShipmentActivity view={item} audience={audience} actorName={actorName} />
         </div>
-        <ShipmentEvents view={item} entries={entries} audience={audience} />
+        <ShipmentEvents
+          view={item}
+          entries={entries}
+          audience={audience}
+          onRecordAction={audience === 'operations' ? onRecordAction : undefined}
+        />
       </div>
     </section>
   )

@@ -1,13 +1,18 @@
-import type { ShipmentView } from './contracts'
+import type { ActivityRecord, ShipmentView } from './contracts'
 import { normalizeEvent } from './events'
+import { assessDelayRisk } from './risk'
 
 /**
- * Unknown codes stay in the timeline, but only need attention until the operator confirms
- * a later known event on the same leg.
+ * Unknown codes stay in the timeline, but only need attention until a person classifies them
+ * or the operator confirms a later known event on the same leg.
  */
-export function unresolvedUnknownEventIds(item: ShipmentView): string[] {
+export function unresolvedUnknownEventIds(
+  item: Pick<ShipmentView, 'projection' | 'events'> & { activity?: readonly ActivityRecord[] },
+): string[] {
   const known = item.events.filter((event) => normalizeEvent(event).mapping === 'known')
+  const classified = new Set(item.activity?.map((record) => record.eventId))
   return item.projection.unknownEventIds.filter((id) => {
+    if (classified.has(id)) return false
     const unknown = item.events.find((event) => event.id === id)
     return (
       !unknown ||
@@ -19,6 +24,8 @@ export function unresolvedUnknownEventIds(item: ShipmentView): string[] {
     )
   })
 }
+
+export const DELAY_RISK_REASON = 'Riesgo de retraso · estimación IA'
 
 export function attentionReasons(item: ShipmentView, cutoffAt: string): string[] {
   const { projection, shipment } = item
@@ -37,7 +44,17 @@ export function attentionReasons(item: ShipmentView, cutoffAt: string): string[]
     reasons.push('Llegada prevista fuera de plazo')
   else if (Date.parse(cutoffAt) > Date.parse(shipment.committedDeliveryAt))
     reasons.push('Entrega pendiente fuera de plazo')
+  if (assessDelayRisk(item, cutoffAt)) reasons.push(DELAY_RISK_REASON)
   return reasons
+}
+
+/**
+ * A shipment with a problem whose proposed actions have all been recorded is waiting for the
+ * operator: it stays visible, but nobody has anything to do on it right now.
+ */
+export function needsAction(item: ShipmentView, cutoffAt: string) {
+  if (!attentionReasons(item, cutoffAt).length) return false
+  return item.recommendations.length > 0 || item.activity.length === 0
 }
 
 export function arrivalsToday(items: readonly ShipmentView[], cutoffAt: string) {

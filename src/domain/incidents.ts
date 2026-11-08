@@ -246,8 +246,7 @@ export function incidentsFromTimeline(input: IncidentInput): ShipmentIncident[] 
 
 /**
  * Incidents derived from the shipment's visible events and documents at the cutoff.
- * Stable IDs, evidence linked to original events or documents, `attention: 'unreviewed'`
- * until phase 3 adds actions.
+ * Stable IDs and evidence linked to original events or documents.
  */
 export function deriveIncidents(
   dataset: DemoDataset,

@@ -416,3 +416,8 @@
     width: 30%;
   }
 }
+.report-findings-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}

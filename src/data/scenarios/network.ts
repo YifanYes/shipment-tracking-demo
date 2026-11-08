@@ -1,6 +1,24 @@
-import type { Account, DemoIdentity, LogisticsLocation, Operator } from '@/domain/contracts'
+import type {
+  Account,
+  DemoIdentity,
+  IsoDateTime,
+  LogisticsLocation,
+  Operator,
+} from '@/domain/contracts'
 
-export const referenceTime = '2026-10-31T10:00:00.000Z'
+const DEMO_START_HOUR = 11
+
+/** The demo clock starts at 11:00 in Madrid on the current Madrid calendar day. */
+export function demoReferenceTime(now: Date): IsoDateTime {
+  const madrid = (date: Date, options: Intl.DateTimeFormatOptions) =>
+    new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Madrid', ...options }).format(date)
+  const day = madrid(now, { year: 'numeric', month: '2-digit', day: '2-digit' })
+  const guess = new Date(`${day}T${DEMO_START_HOUR}:00:00.000Z`)
+  const offsetHours = Number(madrid(guess, { hour: '2-digit', hourCycle: 'h23' })) - DEMO_START_HOUR
+  return new Date(guess.getTime() - offsetHours * 3_600_000).toISOString()
+}
+
+export const referenceTime = demoReferenceTime(new Date())
 
 export const accounts: readonly Account[] = [
   { id: 'account-norte', name: 'Norte Hogar' },

@@ -21,6 +21,19 @@ export const at = (minutes: number): IsoDateTime =>
 
 export const hours = (value: number) => value * 60
 
+const madridTime = (minutes: number, options: Intl.DateTimeFormatOptions) =>
+  new Intl.DateTimeFormat('es-ES', { timeZone: 'Europe/Madrid', ...options }).format(
+    new Date(at(minutes)),
+  )
+
+/** Madrid wall-clock time for story text, such as "18:30". */
+export const clockAt = (minutes: number) =>
+  madridTime(minutes, { hour: '2-digit', minute: '2-digit' })
+
+/** Madrid date and time for story text, such as "2 nov, 07:00". */
+export const dateTimeAt = (minutes: number) =>
+  `${madridTime(minutes, { day: 'numeric', month: 'short' })}, ${clockAt(minutes)}`
+
 export const milestones = {
   road: ['planned', 'collected', 'in_transit', 'out_for_delivery', 'completed'],
   roadToPort: ['planned', 'collected', 'in_transit', 'completed'],
